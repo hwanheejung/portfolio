@@ -345,6 +345,22 @@ function validateRelations(
       }
     }
 
+    for (const duplicate of duplicateValues(article.spotlightIn)) {
+      issues.push({
+        file: `content/articles/${article.slug}/index.mdx`,
+        message: `Spotlight category "${duplicate}" is duplicated.`,
+      });
+    }
+
+    for (const category of article.spotlightIn) {
+      if (article.categories[category].length === 0) {
+        issues.push({
+          file: `content/articles/${article.slug}/index.mdx`,
+          message: `A spotlight article must belong to category "${category}".`,
+        });
+      }
+    }
+
     for (const duplicate of duplicateValues(article.related)) {
       issues.push({
         file: `content/articles/${article.slug}/index.mdx`,
@@ -367,31 +383,73 @@ function validateRelations(
     }
   }
 
+  for (const category of articleCategoryIds) {
+    const spotlighted = snapshot.articles.filter((article) =>
+      article.spotlightIn.includes(category),
+    );
+
+    if (spotlighted.length > 1) {
+      issues.push({
+        file: "content/articles",
+        message: `Category "${category}" can spotlight only one article. Found: ${spotlighted
+          .map((article) => article.slug)
+          .join(", ")}.`,
+      });
+    }
+  }
+
+  for (const experience of snapshot.experiences) {
+    const file = `content/experiences/${experience.id}/index.yml`;
+
+    for (const duplicate of duplicateValues(experience.articles)) {
+      issues.push({
+        file,
+        message: `Article "${duplicate}" is duplicated.`,
+      });
+    }
+
+    for (const slug of experience.articles) {
+      const article = articleBySlug.get(slug);
+      if (!article) {
+        issues.push({
+          file,
+          message: `Article "${slug}" does not exist.`,
+        });
+      } else if (article.draft) {
+        issues.push({
+          file,
+          message: `Article "${slug}" is a draft and cannot be featured.`,
+        });
+      }
+    }
+  }
+
+  for (const duplicate of duplicateValues(
+    snapshot.placements.home.featuredWorks,
+  )) {
+    issues.push({
+      file: "content/placements.yml",
+      message: `home.featuredWorks contains duplicate "${duplicate}".`,
+    });
+  }
+
+  for (const id of snapshot.placements.home.featuredWorks) {
+    if (!experienceById.has(id)) {
+      issues.push({
+        file: "content/placements.yml",
+        message: `home.featuredWorks references unknown experience "${id}".`,
+      });
+    }
+  }
+
   const placementSlots: Array<{
     file: string;
     values: string[];
-    kind: "article" | "experience";
   }> = [
-    {
-      file: "home.featuredWorks",
-      values: snapshot.placements.home.featuredWorks,
-      kind: "article",
-    },
     {
       file: "home.featuredArticles",
       values: snapshot.placements.home.featuredArticles,
-      kind: "article",
     },
-    {
-      file: "about.featuredExperiences",
-      values: snapshot.placements.about.featuredExperiences,
-      kind: "experience",
-    },
-    ...articleCategoryIds.map((category) => ({
-      file: `articles.categoryTop.${category}`,
-      values: snapshot.placements.articles.categoryTop[category],
-      kind: "article" as const,
-    })),
   ];
 
   for (const slot of placementSlots) {
@@ -403,16 +461,6 @@ function validateRelations(
     }
 
     for (const id of slot.values) {
-      if (slot.kind === "experience") {
-        if (!experienceById.has(id)) {
-          issues.push({
-            file: "content/placements.yml",
-            message: `${slot.file} references unknown experience "${id}".`,
-          });
-        }
-        continue;
-      }
-
       const article = articleBySlug.get(id);
       if (!article) {
         issues.push({
@@ -428,27 +476,6 @@ function validateRelations(
     }
   }
 
-  for (const slug of snapshot.placements.home.featuredWorks) {
-    const article = articleBySlug.get(slug);
-    if (article && article.categories.works.length === 0) {
-      issues.push({
-        file: "content/placements.yml",
-        message: `home.featuredWorks article "${slug}" is not in Works.`,
-      });
-    }
-  }
-
-  for (const category of articleCategoryIds) {
-    for (const slug of snapshot.placements.articles.categoryTop[category]) {
-      const article = articleBySlug.get(slug);
-      if (article && article.categories[category].length === 0) {
-        issues.push({
-          file: "content/placements.yml",
-          message: `Article "${slug}" is not in category "${category}".`,
-        });
-      }
-    }
-  }
 }
 
 export async function inspectContent() {
@@ -582,20 +609,15 @@ export async function resolveExperienceIds(ids: readonly string[]) {
 export function orderArticlesForCategory(
   articles: readonly ArticleSummary[],
   category: ArticleCategoryId,
-  topSlugs: readonly string[],
 ) {
-  const topIndex = new Map(topSlugs.map((slug, index) => [slug, index]));
-
   return articles
     .filter((article) => article.categories[category].length > 0)
     .toSorted((a, b) => {
-      const aTop = topIndex.get(a.slug);
-      const bTop = topIndex.get(b.slug);
+      const aSpotlight = a.spotlightIn.includes(category);
+      const bSpotlight = b.spotlightIn.includes(category);
 
-      if (aTop !== undefined || bTop !== undefined) {
-        if (aTop === undefined) return 1;
-        if (bTop === undefined) return -1;
-        return aTop - bTop;
+      if (aSpotlight !== bSpotlight) {
+        return aSpotlight ? -1 : 1;
       }
 
       return b.date.localeCompare(a.date);

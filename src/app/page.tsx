@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import type { ArticleSummary } from "@schema/article";
-import type { Taxonomy } from "@schema/taxonomy";
 import { ArticleMeta } from "@/components/article/article-meta";
 import { getDisplayTags } from "@/components/article/get-display-tags";
 import {
@@ -10,41 +9,40 @@ import {
   getPlacements,
   getTaxonomy,
   resolveArticleSlugs,
+  resolveExperienceIds,
 } from "@/lib/content";
+import { WorkshopGlyph } from "./_components/workshop-glyph";
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({
+  children,
+  number,
+}: {
+  children: React.ReactNode;
+  number: string;
+}) {
   return (
-    <p className="display-font text-sm uppercase tracking-tight md:text-base">
-      {children}
-    </p>
+    <div className="home-section-heading">
+      <span className="section-number">{number}</span>
+      <h2 className="display-font home-section-title">{children}</h2>
+    </div>
   );
 }
 
-function WorkCard({
-  article,
-  eyebrow,
-}: {
-  article: ArticleSummary;
-  eyebrow: string;
-}) {
+function WorkCard({ article }: { article: ArticleSummary }) {
   return (
-    <article className="grid overflow-hidden rounded-2xl border border-border bg-card md:grid-cols-[1.15fr_0.85fr]">
+    <Link
+      href={`/articles/${article.slug}`}
+      className="surface interactive-surface artifact-card grid overflow-hidden md:grid-cols-[1.15fr_0.85fr]"
+    >
       <div className="flex min-h-52 flex-col p-5 md:p-6">
-        <p className="display-font text-xs uppercase text-muted-foreground">
-          {eyebrow}
-        </p>
-        <h4 className="display-font mt-5 text-xl uppercase">
-          {article.title}
-        </h4>
+        <h4 className="display-font text-xl">{article.title}</h4>
         <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
           {article.excerpt}
         </p>
-        <Link
-          className="mt-auto pt-8 text-sm underline-offset-4 hover:underline"
-          href={`/articles/${article.slug}`}
-        >
-          → view detail
-        </Link>
+        <div className="work-card-cta mt-auto w-fit pt-8 text-sm font-medium">
+          View project
+          <WorkshopGlyph className="ml-1 inline size-3.5" name="arrow" />
+        </div>
       </div>
       <div className="relative min-h-52 border-t border-border bg-muted md:border-t-0 md:border-l">
         {article.thumbnailUrl ? (
@@ -57,25 +55,8 @@ function WorkCard({
           />
         ) : null}
       </div>
-    </article>
+    </Link>
   );
-}
-
-function groupWorks(articles: ArticleSummary[], taxonomy: Taxonomy) {
-  const groups = new Map<
-    string,
-    { id: string; label: string; articles: ArticleSummary[] }
-  >();
-
-  for (const article of articles) {
-    const id = article.categories.works[0] ?? "works";
-    const label = taxonomy.categories.works.tags[id]?.label ?? "Works";
-    const group = groups.get(id) ?? { id, label, articles: [] };
-    group.articles.push(article);
-    groups.set(id, group);
-  }
-
-  return [...groups.values()];
 }
 
 export default async function HomePage() {
@@ -84,99 +65,71 @@ export default async function HomePage() {
     getPlacements(),
     getTaxonomy(),
   ]);
-  const [featuredWorks, featuredArticles] = await Promise.all([
-    resolveArticleSlugs(placements.home.featuredWorks),
+  const experiences = await resolveExperienceIds(
+    placements.home.featuredWorks,
+  );
+  const workArticleSlugs = [
+    ...new Set(experiences.flatMap((experience) => experience.articles)),
+  ];
+  const [workArticles, featuredArticles] = await Promise.all([
+    resolveArticleSlugs(workArticleSlugs),
     resolveArticleSlugs(placements.home.featuredArticles),
   ]);
-  const workGroups = groupWorks(featuredWorks, taxonomy);
+  const workArticleBySlug = new Map(
+    workArticles.map((article) => [article.slug, article]),
+  );
+  const workGroups = experiences
+    .map((experience) => ({
+      experience,
+      articles: experience.articles.flatMap((slug) => {
+        const article = workArticleBySlug.get(slug);
+        return article ? [article] : [];
+      }),
+    }))
+    .filter((group) => group.articles.length > 0);
   const primaryArticle = featuredArticles[0];
   const secondaryArticles = featuredArticles.slice(1);
-  const heroImage = featuredWorks[0]?.thumbnailUrl;
 
   return (
     <div className="page-shell">
-      <section className="grid min-h-[34rem] items-center gap-12 py-12 md:grid-cols-[1fr_0.82fr] md:py-20">
+      <section className="grid min-h-[calc(100svh-4.5rem)] items-center gap-5 py-14 md:grid-cols-[1.12fr_0.88fr] md:py-20">
         <div>
-          <p className="display-font mb-5 text-sm uppercase">
-            {about.hero.eyebrow}
-          </p>
-          <h1 className="display-font max-w-xl text-balance text-[clamp(2.6rem,6vw,5.4rem)] uppercase leading-[1.06]">
-            {about.hero.heading}
+          <p className="eyebrow mb-5">{about.hero.eyebrow}</p>
+          <h1 className="display-font max-w-2xl text-balance text-[clamp(3rem,5.5vw,6.4rem)] leading-[0.95] tracking-[-0.065em]">
+            Building <br />{" "}
+            <span className="editorial-font text-accent">human</span>
+            -centered products through{" "}
+            <span className="editorial-font text-accent">software</span>
           </h1>
-        </div>
-        <div className="mx-auto w-full max-w-md">
-          <div className="relative aspect-square overflow-hidden rounded-[30%] bg-muted">
-            {heroImage ? (
-              <Image
-                alt=""
-                className="object-cover"
-                fill
-                priority
-                sizes="(min-width: 768px) 28rem, 85vw"
-                src={heroImage}
-              />
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-8 py-16 md:grid-cols-[12rem_1fr] md:py-20">
-        <SectionLabel>About me</SectionLabel>
-        <div className="max-w-2xl space-y-4 text-base leading-7 text-muted-foreground">
-          {about.summary.body.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-8 py-16 md:grid-cols-[12rem_1fr] md:py-20">
-        <SectionLabel>How I work</SectionLabel>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {about.principles.map((principle, index) => (
-            <article
-              className={[
-                "min-h-48 rounded-2xl border border-border bg-card p-5 md:p-6",
-                index === 2 ? "sm:col-span-1" : "",
-              ].join(" ")}
-              key={principle.id}
-            >
-              <h3 className="display-font text-base uppercase">
-                {principle.title}
-              </h3>
-              <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                {principle.description}
-              </p>
-            </article>
-          ))}
+          <p className="mt-7 max-w-md text-base leading-7 text-muted-foreground md:text-lg">
+            Product-minded frontend engineer based in Seoul, turning complex
+            systems into clear, useful experiences.
+          </p>
         </div>
       </section>
 
       <section className="grid gap-10 py-20 md:grid-cols-[12rem_1fr] md:py-28">
-        <SectionLabel>Featured work</SectionLabel>
+        <SectionLabel number="01">Featured work</SectionLabel>
         <div className="space-y-24">
           {workGroups.map((group) => (
-            <section key={group.id}>
-              <h2 className="display-font text-2xl uppercase">
-                @{group.label} | Selected work
-              </h2>
-              <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">
-                A short overview of the context, my role, and the outcome of
-                this work.
+            <section key={group.experience.id}>
+              <h3 className="display-font text-3xl tracking-[-0.04em]">
+                @{group.experience.organization} | {group.experience.role}
+              </h3>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {group.experience.summary}
               </p>
-              <div className="mt-10 space-y-4">
-                {group.articles.map((article, index) => (
-                  <WorkCard
-                    article={article}
-                    eyebrow={index % 2 === 0 ? "Product" : "Team"}
-                    key={article.slug}
-                  />
+              <div className="mt-7 space-y-4">
+                {group.articles.map((article) => (
+                  <WorkCard article={article} key={article.slug} />
                 ))}
               </div>
               <Link
                 className="mt-5 block text-right text-sm"
-                href={`/articles?works=${group.id}#works`}
+                href="/articles#works"
               >
-                more works in {group.label} →
+                More work at {group.experience.organization}
+                <WorkshopGlyph className="ml-1 inline size-3.5" name="arrow" />
               </Link>
             </section>
           ))}
@@ -184,70 +137,81 @@ export default async function HomePage() {
       </section>
 
       <section className="grid gap-10 py-20 md:grid-cols-[12rem_1fr] md:py-28">
-        <SectionLabel>
+        <SectionLabel number="02">
           Featured article
-          <br />&amp; research
+          <span className="text-muted-foreground"> &amp; research</span>
         </SectionLabel>
         <div>
+          <div className="mb-5 flex justify-end">
+            <Link
+              className="article-disclosure-link text-sm font-medium text-accent"
+              href="/articles"
+            >
+              View all <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+
           {primaryArticle ? (
-            <article className="grid gap-6 md:grid-cols-[1fr_10rem]">
-              <div>
-                <h2 className="display-font text-2xl uppercase">
-                  {primaryArticle.title}
-                </h2>
-                <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
-                  {primaryArticle.excerpt}
-                </p>
-                <div className="mt-5">
-                  <ArticleMeta
-                    date={primaryArticle.date}
-                    tags={getDisplayTags(primaryArticle, taxonomy)}
-                  />
+            <article>
+              <Link
+                className="article-feature-main pressable"
+                href={`/articles/${primaryArticle.slug}`}
+              >
+                <div>
+                  <h3 className="display-font text-3xl tracking-[-0.04em]">
+                    {primaryArticle.title}
+                  </h3>
+                  <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
+                    {primaryArticle.excerpt}
+                  </p>
+                  <div className="mt-5">
+                    <ArticleMeta
+                      date={primaryArticle.date}
+                      tags={getDisplayTags(primaryArticle, taxonomy)}
+                    />
+                  </div>
+                  <span className="mt-6 inline-block text-sm font-medium text-accent">
+                    Read article{" "}
+                    <WorkshopGlyph
+                      className="row-arrow ml-1 inline size-3.5"
+                      name="arrow"
+                    />
+                  </span>
                 </div>
-                <Link
-                  className="mt-5 inline-block text-sm"
-                  href={`/articles/${primaryArticle.slug}`}
-                >
-                  Read Full Article →
-                </Link>
-              </div>
-              <div className="relative aspect-square overflow-hidden bg-muted">
-                {primaryArticle.thumbnailUrl ? (
-                  <Image
-                    alt=""
-                    className="object-cover"
-                    fill
-                    sizes="10rem"
-                    src={primaryArticle.thumbnailUrl}
-                  />
-                ) : null}
-              </div>
+                <div className="article-feature-media relative aspect-square">
+                  {primaryArticle.thumbnailUrl ? (
+                    <Image
+                      alt=""
+                      className="object-cover"
+                      fill
+                      sizes="10rem"
+                      src={primaryArticle.thumbnailUrl}
+                    />
+                  ) : null}
+                </div>
+              </Link>
             </article>
           ) : null}
 
-          <div className="mt-10 divide-y divide-border">
+          <div className="divide-y divide-border border-t border-border">
             {secondaryArticles.map((article) => (
               <Link
-                className="grid grid-cols-[1fr_auto] gap-5 py-5"
+                className="article-index-row pressable grid grid-cols-[1fr_auto] items-center gap-5 px-5 py-5 md:px-8"
                 href={`/articles/${article.slug}`}
                 key={article.slug}
               >
                 <div>
-                  <h3 className="display-font text-lg uppercase">
-                    {article.title}
-                  </h3>
+                  <h3 className="display-font text-lg">{article.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {article.excerpt}
                   </p>
                 </div>
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true" className="row-arrow text-accent">
+                  →
+                </span>
               </Link>
             ))}
           </div>
-
-          <Link className="mt-7 block text-right text-sm" href="/articles">
-            view all →
-          </Link>
         </div>
       </section>
     </div>

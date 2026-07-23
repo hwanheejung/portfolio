@@ -15,11 +15,11 @@ export function ArticleListItem({
   return (
     <article>
       <Link
-        className="group grid gap-4 py-6 md:grid-cols-[1fr_auto] md:items-start md:py-8"
+        className="article-list-link pressable grid gap-4 py-6 md:grid-cols-[1fr_auto] md:items-start md:py-8"
         href={`/articles/${article.slug}`}
       >
         <div className="space-y-3">
-          <h3 className="text-balance text-xl font-semibold tracking-tight transition-transform group-hover:translate-x-1 md:text-2xl">
+          <h3 className="article-list-title text-balance text-xl font-semibold tracking-tight md:text-2xl">
             {article.title}
           </h3>
           {article.excerpt ? (
@@ -29,7 +29,7 @@ export function ArticleListItem({
           ) : null}
           <ArticleMeta date={article.date} tags={tags} />
         </div>
-        <span className="text-xl" aria-hidden="true">
+        <span className="article-list-arrow text-xl" aria-hidden="true">
           ↗
         </span>
       </Link>

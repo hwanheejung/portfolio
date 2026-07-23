@@ -1,185 +1,150 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
-import {
-  getAbout,
-  getPlacements,
-  resolveExperienceIds,
-} from "@/lib/content";
+import { getAbout, getExperiences } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "About",
   description: "About Hwanhee's background, principles, and experience.",
 };
 
-const dummyImages = [
-  "/_content/articles/karrot-local-jobs/images/thumbnail.svg",
-  "/_content/articles/graphql-cache/images/thumbnail.svg",
-  "/_content/articles/dizzycode/images/thumbnail.svg",
-  "/_content/articles/automation-system/images/thumbnail.svg",
-  "/_content/articles/adder/images/thumbnail.svg",
-] as const;
-
-function DummyImage({
-  src,
-  className = "",
+function SectionLabel({
+  children,
+  number,
 }: {
-  src: string;
-  className?: string;
+  children: React.ReactNode;
+  number: string;
 }) {
   return (
-    <div
-      className={`relative min-h-48 overflow-hidden bg-muted ${className}`}
-    >
-      <Image
-        alt=""
-        className="object-cover"
-        fill
-        sizes="(min-width: 768px) 33vw, 100vw"
-        src={src}
-      />
+    <div className="section-marker">
+      <span className="section-number">{number}</span>
+      <p className="eyebrow">{children}</p>
     </div>
   );
 }
 
 export default async function AboutPage() {
-  const [about, placements] = await Promise.all([
+  const [about, allExperiences] = await Promise.all([
     getAbout(),
-    getPlacements(),
+    getExperiences(),
   ]);
-  const experiences = await resolveExperienceIds(
-    placements.about.featuredExperiences,
+  const experiences = allExperiences.toSorted(
+    (a, b) =>
+      b.period.start.localeCompare(a.period.start) ||
+      a.organization.localeCompare(b.organization),
   );
-  const storyBlocks = [
-    { label: "Today", body: about.summary.body.join(" ") },
-    { label: "Childhood", body: about.history.body.join(" ") },
-    { label: "Growth", body: about.leadership.body.join(" ") },
-    { label: "Goal", body: about.problemSolving.body.join(" ") },
+  const narrative = [...about.summary.body, ...about.history.body];
+  const perspectives = [
+    {
+      label: "Leadership",
+      heading: about.leadership.heading,
+      body: about.leadership.body,
+    },
+    {
+      label: "Problem solving",
+      heading: about.problemSolving.heading,
+      body: about.problemSolving.body,
+    },
+    {
+      label: "Maker",
+      heading: about.maker.heading,
+      body: [about.maker.description],
+    },
   ];
 
   return (
     <div className="page-shell pb-20">
-      <h1 className="sr-only">About Hwanhee</h1>
+      <header className="compact-page-intro">
+        <p className="eyebrow">About Hwanhee</p>
+        <h1 className="display-font compact-page-title mt-4">
+          About Hwanhee
+        </h1>
+        <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+          {about.summary.heading}
+        </p>
+      </header>
 
-      <section className="grid gap-4 py-12 md:grid-cols-[0.92fr_1.08fr] md:py-20">
-        <article className="rounded-2xl border border-border bg-card p-5 md:p-6">
-          <div className="space-y-5">
-            {storyBlocks.map((block) => (
-              <div key={block.label}>
-                <h2 className="display-font text-xs uppercase">
-                  {block.label}
-                </h2>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {block.body}
-                </p>
-              </div>
+      <section className="grid gap-14 pb-20 pt-4 md:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.65fr)] md:pb-28">
+        <div>
+          <p className="eyebrow">About</p>
+          <div className="mt-6 max-w-3xl space-y-5 text-xl leading-8 tracking-[-0.02em] text-muted-foreground md:text-2xl md:leading-9">
+            {narrative.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
-        </article>
+        </div>
 
-        <article className="h-fit rounded-2xl border border-border bg-card p-5 md:p-6">
-          <h2 className="display-font text-xs uppercase">
-            Recent experiences
-          </h2>
-          <div className="mt-5 divide-y divide-border">
-            {experiences.map((experience, index) => (
-              <div
-                className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-3 first:pt-0"
-                key={experience.id}
-              >
-                <div className="relative size-10 overflow-hidden bg-muted">
-                  <Image
-                    alt=""
-                    className="object-cover"
-                    fill
-                    sizes="2.5rem"
-                    src={
-                      dummyImages[index % dummyImages.length] ?? dummyImages[0]
-                    }
-                  />
+        <aside>
+          <p className="eyebrow">Experience</p>
+          <div className="mt-6 divide-y divide-border border-y border-border">
+            {experiences.map((experience) => (
+              <div className="py-5" key={experience.id}>
+                <div className="flex items-baseline justify-between gap-4">
+                  <p className="display-font text-base">
+                    {experience.organization}
+                  </p>
+                  <p className="technical-font text-[0.66rem] text-muted-foreground">
+                    {experience.period.start}—
+                    {experience.period.end ?? "Now"}
+                  </p>
                 </div>
-                <p className="text-sm">
-                  {experience.organization} | {experience.role}
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {experience.role}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {experience.period.start}—{experience.period.end ?? "Now"}
+                <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                  {experience.summary}
                 </p>
               </div>
             ))}
           </div>
-        </article>
+        </aside>
       </section>
 
-      <section className="py-16 md:py-24">
-        <p className="display-font text-xs uppercase text-muted-foreground">
-          Leadership
-        </p>
-        <h2 className="display-font mt-3 max-w-3xl text-2xl uppercase md:text-3xl">
-          {about.leadership.heading}
-        </h2>
-        <div className="mt-9 grid gap-4 sm:grid-cols-3">
-          {dummyImages.slice(0, 3).map((src, index) => (
-            <figure key={src}>
-              <DummyImage className="aspect-[4/3]" src={src} />
-              <figcaption className="mt-3 text-xs leading-5 text-muted-foreground">
-                {index === 0
-                  ? "Vice president · Led a team"
-                  : index === 1
-                    ? "Speaker · Mentor"
-                    : "Community organizer"}
-              </figcaption>
-            </figure>
+      <section className="grid gap-10 border-t border-border py-20 md:grid-cols-[12rem_1fr] md:py-28">
+        <SectionLabel number="01">How I work</SectionLabel>
+        <div className="grid gap-x-10 sm:grid-cols-2">
+          {about.principles.map((principle, index) => (
+            <article
+              className="border-t border-border py-7"
+              key={principle.id}
+            >
+              <p className="technical-font text-[0.62rem] text-accent">
+                0{index + 1}
+              </p>
+              <h2 className="display-font mt-3 text-xl">
+                {principle.title}
+              </h2>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                {principle.description}
+              </p>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="py-16 md:py-24">
-        <p className="display-font text-xs uppercase text-muted-foreground">
-          Problem solver, change how we work
-        </p>
-        <h2 className="display-font mt-3 max-w-3xl text-2xl uppercase md:text-3xl">
-          {about.problemSolving.heading}
-        </h2>
-        <div className="mt-9 grid gap-3 md:grid-cols-[1.12fr_0.88fr]">
-          <DummyImage
-            className="min-h-80 md:min-h-[24rem]"
-            src={dummyImages[3]}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            {[0, 1, 2, 4].map((imageIndex) => (
-              <DummyImage
-                className="min-h-36"
-                key={imageIndex}
-                src={dummyImages[imageIndex] ?? dummyImages[0]}
-              />
-            ))}
-          </div>
+      <section className="grid gap-10 border-t border-border py-20 md:grid-cols-[12rem_1fr] md:py-28">
+        <SectionLabel number="02">Perspective</SectionLabel>
+        <div className="divide-y divide-border border-y border-border">
+          {perspectives.map((perspective) => (
+            <article
+              className="grid gap-4 py-8 md:grid-cols-[9rem_1fr] md:gap-10 md:py-10"
+              key={perspective.label}
+            >
+              <p className="technical-font text-[0.66rem] uppercase tracking-[0.08em] text-accent">
+                {perspective.label}
+              </p>
+              <div>
+                <h2 className="display-font max-w-3xl text-2xl tracking-[-0.035em] md:text-4xl">
+                  {perspective.heading}
+                </h2>
+                <div className="mt-4 max-w-2xl space-y-3 text-sm leading-6 text-muted-foreground md:text-base md:leading-7">
+                  {perspective.body.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {about.problemSolving.body[0]}
-        </p>
-      </section>
-
-      <section className="py-16 md:py-24">
-        <p className="display-font text-xs uppercase text-muted-foreground">
-          Maker
-        </p>
-        <h2 className="display-font mt-3 max-w-3xl text-2xl uppercase md:text-3xl">
-          {about.maker.heading}
-        </h2>
-        <div className="mt-9 grid gap-4 sm:grid-cols-2">
-          <DummyImage
-            className="min-h-72 md:min-h-[24rem]"
-            src={dummyImages[4]}
-          />
-          <DummyImage
-            className="min-h-72 md:min-h-[24rem]"
-            src={dummyImages[2]}
-          />
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          {about.maker.description}
-        </p>
       </section>
     </div>
   );

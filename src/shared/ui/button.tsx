@@ -12,10 +12,10 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   default:
-    "border border-foreground bg-foreground text-background hover:bg-foreground/85",
+    "button-default border border-foreground bg-foreground text-background",
   outline:
-    "border border-border bg-background text-foreground hover:border-foreground",
-  ghost: "border border-transparent bg-transparent hover:bg-muted",
+    "button-outline border border-border bg-background text-foreground",
+  ghost: "button-ghost border border-transparent bg-transparent",
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -34,7 +34,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-full font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45",
+        "pressable inline-flex items-center justify-center rounded-full font-medium focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-45",
         variants[variant],
         sizes[size],
         className,

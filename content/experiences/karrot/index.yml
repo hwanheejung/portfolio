@@ -5,6 +5,9 @@ period:
   start: "2023"
   end: null
 summary: Building tools and product experiences that help local teams move with clarity.
+articles:
+  - karrot-local-jobs
+  - automation-system
 highlights:
   - Designed automation systems for recurring operational work.
   - Connected product context with maintainable frontend architecture.

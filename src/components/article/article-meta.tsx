@@ -11,7 +11,10 @@ export function ArticleMeta({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <time className="text-sm text-muted-foreground" dateTime={date}>
+      <time
+        className="technical-font text-[0.68rem] text-muted-foreground"
+        dateTime={date}
+      >
         {date.replaceAll("-", ".")}
       </time>
       {tags.map((tag) => (

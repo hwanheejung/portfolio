@@ -24,26 +24,37 @@ test("home composes content-driven sections", async ({ page }) => {
     page.getByRole("main").getByText("Featured work", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "@Karrot | Selected work" }),
+    page.getByRole("heading", { name: "@Karrot | Product Engineer" }),
   ).toBeVisible();
-  await expect(page.getByText("Resume", { exact: true })).toBeVisible();
 });
 
-test("article filters update the URL and category result", async ({ page }) => {
+test("article spotlight opens by default and disclosure rows toggle", async ({
+  page,
+}) => {
   await page.goto("/articles");
 
   const automation = page.locator("#automation");
-  await automation.getByRole("button", { name: "Naver" }).click();
+  const spotlight = automation.getByRole("button", {
+    name: "스위치로 만든 계산기 preview",
+  });
+  const secondArticle = automation.getByRole("button", {
+    name: "Karrot | Local jobs preview",
+  });
 
-  await expect(page).toHaveURL(/automation=naver/);
-  await expect(
-    automation.getByRole("heading", {
-      name: "팀의 반복 업무를 줄이는 자동화 시스템",
-    }),
-  ).toBeVisible();
-  await expect(
-    automation.getByRole("heading", { name: "스위치로 만든 계산기" }),
-  ).toHaveCount(0);
+  await expect(spotlight).toHaveAttribute("aria-expanded", "true");
+  await secondArticle.hover();
+  await expect(secondArticle).toHaveAttribute("aria-expanded", "true");
+  await expect(spotlight).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("banner").hover();
+  await expect(spotlight).toHaveAttribute("aria-expanded", "true");
+  await secondArticle.click();
+  await expect(secondArticle).toHaveAttribute("aria-expanded", "true");
+  await expect(spotlight).toHaveAttribute("aria-expanded", "false");
+
+  await automation
+    .getByRole("link", { name: "Read Karrot | Local jobs", exact: true })
+    .click();
+  await expect(page).toHaveURL("/articles/karrot-local-jobs");
 });
 
 test("an MDX article renders an interactive component", async ({ page }) => {
@@ -66,6 +77,19 @@ test("about renders curated experiences", async ({ page }) => {
       name: /Leadership is creating room/,
     }),
   ).toBeVisible();
-  await expect(page.getByText(/Karrot \| Product Engineer/)).toBeVisible();
-  await expect(page.getByText(/Naver \| Frontend Engineer/)).toBeVisible();
+  const experience = page.getByRole("complementary");
+  await expect(experience.getByText("Karrot", { exact: true })).toBeVisible();
+  await expect(
+    experience.getByText("Product Engineer", { exact: true }),
+  ).toBeVisible();
+  await expect(experience.getByText("Naver", { exact: true })).toBeVisible();
+  await expect(
+    experience.getByText("Frontend Engineer", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "About Hwanhee" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText("How I work", { exact: true }),
+  ).toBeVisible();
 });

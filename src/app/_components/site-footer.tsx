@@ -12,8 +12,8 @@ const footerGroups = [
   {
     title: "Featured work",
     links: [
-      { label: "Karrot", href: "/articles?works=karrot#works" },
-      { label: "Naver", href: "/articles?works=naver#works" },
+      { label: "Karrot · Local jobs", href: "/articles/karrot-local-jobs" },
+      { label: "Naver · Automation", href: "/articles/automation-system" },
     ],
   },
   {
@@ -27,21 +27,22 @@ const footerGroups = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 bg-black text-white md:mt-32">
-      <div className="page-shell py-12 md:py-16">
-        <p className="display-font text-center text-xl uppercase">
-          Thanks for stopping by!
+    <footer className="mt-24 border-t border-border bg-[#100e0c] text-white md:mt-32">
+      <div className="page-shell py-16 md:py-20">
+        <p className="display-font mt-5 max-w-2xl text-3xl tracking-[-0.04em] md:text-5xl">
+          Glad we could cross paths.
         </p>
-        <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-10 text-sm md:grid-cols-4">
+        <div className="mt-14 grid grid-cols-2 gap-10 text-sm md:grid-cols-4">
           {footerGroups.map((group) => (
             <div key={group.title}>
-              <p className="display-font text-xs uppercase text-white/60">
-                {group.title}
-              </p>
+              <p className="eyebrow text-white/55">{group.title}</p>
               <ul className="mt-4 space-y-3">
                 {group.links.map((link) => (
                   <li key={link.href}>
-                    <Link className="hover:text-accent" href={link.href}>
+                    <Link
+                      className="footer-link"
+                      href={link.href}
+                    >
                       {link.label}
                     </Link>
                   </li>
@@ -50,9 +51,7 @@ export function SiteFooter() {
             </div>
           ))}
           <div>
-            <p className="display-font text-xs uppercase text-white/60">
-              Let&apos;s connect
-            </p>
+            <p className="eyebrow text-white/55">Let&apos;s connect</p>
             <ul className="mt-4 space-y-3 text-white/55">
               <li>LinkedIn</li>
               <li>GitHub</li>

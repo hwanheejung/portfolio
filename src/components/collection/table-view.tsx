@@ -39,7 +39,7 @@ export function TableView<T>({
     <Table>
       {caption ? <caption className="sr-only">{caption}</caption> : null}
       <TableHeader>
-        <TableRow className="hover:bg-transparent">
+        <TableRow>
           {columns.map((column) => (
             <TableHead className={column.className} key={column.id}>
               {column.header}

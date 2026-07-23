@@ -16,6 +16,7 @@ export const ExperienceSchema = z
     role: z.string().trim().min(1),
     period: PeriodSchema,
     summary: z.string().trim().min(1),
+    articles: z.array(SlugSchema).default([]),
     highlights: z.array(z.string().trim().min(1)).default([]),
     images: z.array(z.string().trim().min(1)).default([]),
   })

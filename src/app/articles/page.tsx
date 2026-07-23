@@ -8,7 +8,6 @@ import {
 } from "@schema/article";
 import {
   getArticles,
-  getPlacements,
   getTaxonomy,
   orderArticlesForCategory,
 } from "@/lib/content";
@@ -22,27 +21,31 @@ export const metadata: Metadata = {
 };
 
 export default async function ArticlesPage() {
-  const [articles, placements, taxonomy] = await Promise.all([
+  const [articles, taxonomy] = await Promise.all([
     getArticles(),
-    getPlacements(),
     getTaxonomy(),
   ]);
 
   const articlesByCategory = Object.fromEntries(
     articleCategoryIds.map((category) => [
       category,
-      orderArticlesForCategory(
-        articles,
-        category,
-        placements.articles.categoryTop[category],
-      ),
+      orderArticlesForCategory(articles, category),
     ]),
   ) as Record<ArticleCategoryId, ArticleSummary[]>;
 
   return (
     <div className="page-shell">
-      <h1 className="sr-only">Articles</h1>
-      <div className="pb-24 pt-12 md:pb-36 md:pt-20">
+      <header className="compact-page-intro">
+        <p className="eyebrow">Writing &amp; selected work</p>
+        <h1 className="display-font compact-page-title mt-4">
+          Articles
+        </h1>
+        <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+          Notes on product engineering, automation, and the systems behind
+          thoughtful digital experiences.
+        </p>
+      </header>
+      <div className="pb-24 md:pb-32">
         <Suspense
           fallback={
             <div className="space-y-8">

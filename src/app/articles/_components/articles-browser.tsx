@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import {
   type ArticleCategoryId,
@@ -10,76 +10,171 @@ import {
   type ArticleSummary,
 } from "@schema/article";
 import type { Taxonomy } from "@schema/taxonomy";
-import { ArticleCard } from "@/components/article/article-card";
 import { getDisplayTags } from "@/components/article/get-display-tags";
+import { Badge } from "@/shared/ui/badge";
 
-import { categoryPresentation } from "../_config/presentation";
-import { ArticleFilters } from "./article-filters";
-
-type Selection = Record<ArticleCategoryId, string[]>;
 type ArticlesByCategory = Record<ArticleCategoryId, ArticleSummary[]>;
+type ActiveArticleByCategory = Record<ArticleCategoryId, string | null>;
 
-function parseSelection(
-  searchParams: URLSearchParams | Readonly<URLSearchParams>,
-): Selection {
-  return {
-    automation:
-      searchParams.get("automation")?.split(",").filter(Boolean) ?? [],
-    "deep-dive":
-      searchParams.get("deep-dive")?.split(",").filter(Boolean) ?? [],
-    works: searchParams.get("works")?.split(",").filter(Boolean) ?? [],
-  };
+function getSpotlightArticles(
+  articlesByCategory: ArticlesByCategory,
+): ActiveArticleByCategory {
+  return Object.fromEntries(
+    articleCategoryIds.map((category) => [
+      category,
+      articlesByCategory[category].find((article) =>
+        article.spotlightIn.includes(category),
+      )?.slug ?? null,
+    ]),
+  ) as ActiveArticleByCategory;
 }
 
-function CompactArticleRow({
+function DisclosureChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="article-disclosure-chevron size-5"
+      data-open={open}
+      fill="none"
+      viewBox="0 0 20 20"
+    >
+      <path
+        d="m5.5 7.5 4.5 4.5 4.5-4.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+function DisclosureArticle({
   article,
   category,
+  open,
   taxonomy,
-  tableLike = false,
+  onFocusChange,
+  onHoverChange,
+  onToggle,
 }: {
   article: ArticleSummary;
   category: ArticleCategoryId;
+  open: boolean;
   taxonomy: Taxonomy;
-  tableLike?: boolean;
+  onFocusChange: (slug: string | null) => void;
+  onHoverChange: (slug: string | null) => void;
+  onToggle: () => void;
 }) {
-  const tags = getDisplayTags(article, taxonomy, category);
+  const categoryTags = getDisplayTags(article, taxonomy, category);
+  const allTags = getDisplayTags(article, taxonomy);
+  const panelId = `${category}-${article.slug}-details`;
 
   return (
     <article
-      className={[
-        "grid gap-3 py-4 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-6",
-        tableLike ? "border-b border-border" : "",
-      ].join(" ")}
+      className="article-disclosure"
+      data-open={open}
+      onBlur={(event) => {
+        if (
+          !event.currentTarget.contains(event.relatedTarget as Node | null)
+        ) {
+          onFocusChange(null);
+        }
+      }}
+      onFocus={() => onFocusChange(article.slug)}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") {
+          onHoverChange(null);
+        }
+      }}
+      onPointerMove={(event) => {
+        if (event.pointerType === "mouse") {
+          onHoverChange(article.slug);
+        }
+      }}
     >
-      <Link href={`/articles/${article.slug}`}>
-        <h3 className="display-font text-base uppercase">
-          {article.title}
-        </h3>
-        <p className="mt-2 max-w-xl text-xs leading-5 text-muted-foreground">
-          {article.excerpt}
-        </p>
-      </Link>
-      <div className="flex min-w-24 flex-wrap gap-2 sm:justify-end">
-        {tags.map((tag) => (
-          <span
-            className="rounded-full border px-2.5 py-1 text-[0.68rem]"
-            key={tag.id}
-            style={{
-              borderColor: tag.color,
-              backgroundColor: tag.color,
-              color: "#ffffff",
-            }}
-          >
-            {tag.label}
+      <Link
+        aria-label={`Read ${article.title}`}
+        className="article-disclosure-hit-area"
+        href={`/articles/${article.slug}`}
+      />
+
+      <div className="article-disclosure-trigger">
+        <div className="article-disclosure-summary">
+          <span className="min-w-0">
+            <span className="display-font article-disclosure-title">
+              {article.title}
+            </span>
           </span>
-        ))}
+
+          <span className="hidden flex-wrap justify-end gap-2 md:flex">
+            {open
+              ? null
+              : categoryTags.slice(0, 2).map((tag) => (
+                  <Badge color={tag.color} key={tag.id}>
+                    {tag.label}
+                  </Badge>
+                ))}
+          </span>
+
+          <time
+            className="technical-font text-[0.68rem] text-muted-foreground"
+            dateTime={article.date}
+          >
+            {article.date.replaceAll("-", ".")}
+          </time>
+        </div>
+
+        <button
+          aria-controls={panelId}
+          aria-expanded={open}
+          aria-label={`${article.title} preview`}
+          className="article-disclosure-toggle pressable"
+          onClick={onToggle}
+          type="button"
+        >
+          <DisclosureChevron open={open} />
+        </button>
       </div>
-      <time
-        className="min-w-24 text-xs text-muted-foreground"
-        dateTime={article.date}
+
+      <div
+        aria-hidden={!open}
+        aria-label={`${article.title} preview`}
+        className="article-disclosure-panel"
+        id={panelId}
+        role="region"
       >
-        {article.date}
-      </time>
+        <div className="article-disclosure-clip">
+          <div className="article-disclosure-content">
+            <div className="flex min-w-0 flex-col">
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base md:leading-7">
+                {article.excerpt}
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <Badge color={tag.color} key={`${tag.id}-${tag.label}`}>
+                    {tag.label}
+                  </Badge>
+                ))}
+              </div>
+
+            </div>
+
+            {article.thumbnailUrl ? (
+              <div className="article-disclosure-media relative min-h-36 overflow-hidden bg-muted">
+                <Image
+                  alt=""
+                  className="object-contain p-3"
+                  fill
+                  sizes="(min-width: 640px) 11rem, 100vw"
+                  src={article.thumbnailUrl}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
     </article>
   );
 }
@@ -91,12 +186,18 @@ export function ArticlesBrowser({
   articlesByCategory: ArticlesByCategory;
   taxonomy: Taxonomy;
 }) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-  const selection = useMemo(
-    () => parseSelection(searchParams),
-    [searchParams],
+  const [pinned, setPinned] = useState<ActiveArticleByCategory>(() =>
+    getSpotlightArticles(articlesByCategory),
+  );
+  const [hovered, setHovered] = useState<ActiveArticleByCategory>(() =>
+    Object.fromEntries(
+      articleCategoryIds.map((category) => [category, null]),
+    ) as ActiveArticleByCategory,
+  );
+  const [focused, setFocused] = useState<ActiveArticleByCategory>(() =>
+    Object.fromEntries(
+      articleCategoryIds.map((category) => [category, null]),
+    ) as ActiveArticleByCategory,
   );
 
   const orderedCategories = useMemo(
@@ -108,92 +209,71 @@ export function ArticlesBrowser({
     [taxonomy],
   );
 
-  const updateSelection = (category: ArticleCategoryId, tag: string) => {
-    const current = selection[category];
-    const nextTags = current.includes(tag)
-      ? current.filter((candidate) => candidate !== tag)
-      : [...current, tag];
-    const query = new URLSearchParams(searchParams.toString());
-
-    if (nextTags.length > 0) {
-      query.set(category, nextTags.join(","));
-    } else {
-      query.delete(category);
-    }
-
-    const nextUrl = query.size > 0 ? `${pathname}?${query}` : pathname;
-    router.replace(nextUrl, { scroll: false });
-  };
-
   return (
-    <div className="space-y-28 md:space-y-36">
+    <div className="space-y-20 md:space-y-28">
       {orderedCategories.map((category) => {
-        const selectedTags = selection[category];
-        const articles = articlesByCategory[category].filter(
-          (article) =>
-            selectedTags.length === 0 ||
-            article.categories[category].some((tag) =>
-              selectedTags.includes(tag),
-            ),
-        );
         const categoryData = taxonomy.categories[category];
-        const isAutomation = category === "automation";
-        const tableLike = categoryPresentation[category] === "table";
-        const featuredArticles = isAutomation ? articles.slice(0, 2) : [];
-        const listedArticles = isAutomation ? articles.slice(2) : articles;
+        const openSlug =
+          hovered[category] ?? focused[category] ?? pinned[category];
 
         return (
           <section
-            className="grid gap-8 md:grid-cols-[10rem_1fr] md:gap-14"
+            className="scroll-mt-24 grid gap-8 md:grid-cols-[11rem_1fr] md:gap-14"
             id={category}
             key={category}
           >
-            <aside className="md:pt-1">
-              <h2 className="display-font max-w-40 text-base uppercase leading-6">
+            <aside className="article-category-heading md:pt-1">
+              <h2 className="display-font max-w-40 text-xl leading-6">
                 {categoryData.label}
               </h2>
               <p className="mt-2 max-w-40 text-xs leading-5 text-muted-foreground">
                 {categoryData.description}
               </p>
-              <div className="my-4 h-px w-full bg-border" />
-              <ArticleFilters
-                category={category}
-                onToggle={(tag) => updateSelection(category, tag)}
-                selected={selectedTags}
-                taxonomy={taxonomy}
-              />
             </aside>
 
-            <div>
-              {featuredArticles.length > 0 ? (
-                <div className="mb-3 grid gap-3 sm:grid-cols-2">
-                  {featuredArticles.map((article) => (
-                    <ArticleCard
-                      article={article}
-                      key={article.slug}
-                      tags={getDisplayTags(article, taxonomy, category)}
-                    />
-                  ))}
-                </div>
-              ) : null}
-
-              <div className={tableLike ? "border-t border-border" : ""}>
-                {listedArticles.map((article) => (
-                  <CompactArticleRow
-                    article={article}
-                    category={category}
-                    key={article.slug}
-                    tableLike={tableLike}
-                    taxonomy={taxonomy}
-                  />
-                ))}
-                {listedArticles.length === 0 &&
-                featuredArticles.length === 0 ? (
-                  <p className="py-8 text-sm text-muted-foreground">
-                    No articles match this filter.
-                  </p>
-                ) : null}
-              </div>
+            <div className="article-disclosure-list">
+              {articlesByCategory[category].map((article) => (
+                <DisclosureArticle
+                  article={article}
+                  category={category}
+                  key={article.slug}
+                  onFocusChange={(slug) =>
+                    setFocused((current) => ({
+                      ...current,
+                      [category]: slug,
+                    }))
+                  }
+                  onHoverChange={(slug) =>
+                    setHovered((current) =>
+                      current[category] === slug
+                        ? current
+                        : {
+                            ...current,
+                            [category]: slug,
+                          },
+                    )
+                  }
+                  onToggle={() => {
+                    setPinned((current) => ({
+                      ...current,
+                      [category]:
+                        current[category] === article.slug
+                          ? null
+                          : article.slug,
+                    }));
+                    setFocused((current) => ({
+                      ...current,
+                      [category]: null,
+                    }));
+                    setHovered((current) => ({
+                      ...current,
+                      [category]: null,
+                    }));
+                  }}
+                  open={openSlug === article.slug}
+                  taxonomy={taxonomy}
+                />
+              ))}
             </div>
           </section>
         );

@@ -18,10 +18,10 @@ export function Toggle({
     <button
       aria-pressed={pressed}
       className={cn(
-        "inline-flex min-h-9 items-center rounded-full border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2",
+        "filter-toggle pressable technical-font inline-flex min-h-9 items-center rounded-lg border px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.06em] focus-visible:outline-2 focus-visible:outline-offset-2",
         pressed
           ? "border-foreground bg-foreground text-background"
-          : "border-border bg-background hover:border-foreground",
+          : "border-border bg-background",
         className,
       )}
       type={type}

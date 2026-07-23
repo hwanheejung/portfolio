@@ -78,7 +78,7 @@ export function Circuit(props: CircuitProps) {
               ) : null}
               <button
                 aria-pressed={isActive}
-                className="min-w-20 rounded-xl border border-border px-4 py-3 font-mono text-sm transition-colors data-[active=true]:border-foreground data-[active=true]:bg-foreground data-[active=true]:text-background"
+                className="min-w-20 rounded-xl border border-border px-4 py-3 font-mono text-sm data-[active=true]:border-foreground data-[active=true]:bg-foreground data-[active=true]:text-background"
                 data-active={isActive}
                 onClick={() => toggleNode(node.id)}
                 type="button"

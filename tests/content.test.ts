@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getArticles,
+  getExperiences,
   inspectContent,
   orderArticlesForCategory,
 } from "../src/lib/content";
@@ -15,9 +16,9 @@ describe("content graph", () => {
     expect(result.snapshot?.experiences.length).toBeGreaterThan(0);
   });
 
-  it("puts category top articles before date-sorted articles", async () => {
+  it("puts spotlight articles before date-sorted articles", async () => {
     const articles = await getArticles({ includeDraft: false });
-    const ordered = orderArticlesForCategory(articles, "automation", ["adder"]);
+    const ordered = orderArticlesForCategory(articles, "automation");
 
     expect(ordered[0]?.slug).toBe("adder");
     expect(
@@ -29,5 +30,13 @@ describe("content graph", () => {
         .toSorted()
         .reverse(),
     );
+  });
+
+  it("keeps curated article references on experiences", async () => {
+    const experiences = await getExperiences();
+
+    expect(
+      experiences.find((experience) => experience.id === "karrot")?.articles,
+    ).toContain("karrot-local-jobs");
   });
 });

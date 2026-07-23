@@ -7,18 +7,18 @@ summary:
     - I work across product thinking, interface design, and frontend engineering.
     - I care about tools that help teams move faster without hiding how the system works.
 principles:
-  - id: begin-with-context
-    title: Begin with context
-    description: Understand the people, constraints, and existing system before choosing a solution.
-  - id: make-it-visible
-    title: Make it visible
-    description: Turn implicit decisions into artifacts that a team can inspect and improve together.
-  - id: build-the-smallest-loop
-    title: Build the smallest loop
-    description: Ship a useful slice, observe it in practice, and let evidence shape the next step.
-  - id: leave-a-clear-path
-    title: Leave a clear path
-    description: Prefer structures that the next person can understand, extend, and safely replace.
+  - id: user-impact-always
+    title: User impact, always
+    description: Users rarely announce friction before they leave. I study behavior and logs to uncover what they do not say, then make experiences clear from the first use. What matters is not what shipped, but how it improved a user's life.
+  - id: buildership
+    title: Buildership
+    description: I own outcomes beyond role or team boundaries and move toward the root problem first. The priority is the fastest path to clarity—not whose task it was—while protecting the team and the whole Karrot experience.
+  - id: deep-dive
+    title: Deep dive
+    description: I begin with context and intent, then trace the system down to the lowest useful level. I compare multiple paths, test assumptions, and propose the solution with the clearest trade-offs.
+  - id: speed-small-simple
+    title: Speed, small, simple
+    description: I move quickly by reducing the problem. Small useful slices, simple systems, and short feedback loops turn uncertainty into evidence without adding weight the team must carry later.
 history:
   heading: I have grown by moving between product and engineering.
   body:

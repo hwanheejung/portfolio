@@ -46,6 +46,7 @@ export const ArticleMetadataSchema = z
     thumbnail: z.string().trim().min(1).optional(),
     draft: z.boolean().default(true),
     categories: ArticleCategoriesSchema,
+    spotlightIn: z.array(ArticleCategoryIdSchema).default([]),
     related: z.array(SlugSchema).default([]),
   })
   .strict();
