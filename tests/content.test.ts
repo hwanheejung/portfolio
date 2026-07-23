@@ -1,0 +1,33 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  getArticles,
+  inspectContent,
+  orderArticlesForCategory,
+} from "../src/lib/content";
+
+describe("content graph", () => {
+  it("validates all source content and references", async () => {
+    const result = await inspectContent();
+
+    expect(result.issues).toEqual([]);
+    expect(result.snapshot?.articles.length).toBeGreaterThan(0);
+    expect(result.snapshot?.experiences.length).toBeGreaterThan(0);
+  });
+
+  it("puts category top articles before date-sorted articles", async () => {
+    const articles = await getArticles({ includeDraft: false });
+    const ordered = orderArticlesForCategory(articles, "automation", ["adder"]);
+
+    expect(ordered[0]?.slug).toBe("adder");
+    expect(
+      ordered.slice(1).map((article) => article.date),
+    ).toEqual(
+      ordered
+        .slice(1)
+        .map((article) => article.date)
+        .toSorted()
+        .reverse(),
+    );
+  });
+});

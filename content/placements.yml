@@ -1,0 +1,19 @@
+home:
+  featuredWorks:
+    - karrot-local-jobs
+    - dizzycode
+  featuredArticles:
+    - graphql-cache
+    - adder
+articles:
+  categoryTop:
+    automation:
+      - adder
+    deep-dive:
+      - graphql-cache
+    works:
+      - karrot-local-jobs
+about:
+  featuredExperiences:
+    - karrot
+    - naver

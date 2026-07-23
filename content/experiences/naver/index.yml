@@ -1,0 +1,11 @@
+id: naver
+organization: Naver
+role: Frontend Engineer
+period:
+  start: "2021"
+  end: "2023"
+summary: Worked on user-facing web products and the foundations that supported them.
+highlights:
+  - Improved shared frontend workflows across product surfaces.
+  - Explored GraphQL, React, and build tooling in production.
+images: []

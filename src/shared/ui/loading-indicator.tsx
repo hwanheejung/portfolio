@@ -1,0 +1,14 @@
+import { cn } from "@/shared/lib/cn";
+
+export function LoadingIndicator({ className }: { className?: string }) {
+  return (
+    <span
+      aria-label="Loading"
+      className={cn(
+        "inline-block size-5 animate-spin rounded-full border-2 border-current border-r-transparent",
+        className,
+      )}
+      role="status"
+    />
+  );
+}

@@ -1,0 +1,40 @@
+categories:
+  automation:
+    label: Automation
+    description: Automation systems to fasten teamwork
+    order: 1
+    tags:
+      karrot:
+        label: Karrot
+        color: "#FF6F0F"
+      naver:
+        label: Naver
+        color: "#03C75A"
+  deep-dive:
+    label: Deep Dive
+    description: Technical explorations and notes
+    order: 2
+    tags:
+      graphql:
+        label: GraphQL
+        color: "#E535AB"
+      react:
+        label: React
+        color: "#087EA4"
+      bundler:
+        label: Bundler
+        color: "#F0A000"
+  works:
+    label: Works
+    description: Products and independent projects
+    order: 3
+    tags:
+      karrot:
+        label: Karrot
+        color: "#FF6F0F"
+      naver:
+        label: Naver
+        color: "#03C75A"
+      dizzycode:
+        label: DizzyCode
+        color: "#4F46E5"
