@@ -25,7 +25,7 @@ export function ArticleCard({
       className={cn(
         "artifact-card article-card-link h-full overflow-hidden border border-border bg-card",
         variant === "featured" && "rounded-[1.75rem]",
-        isCompact && "compact-featured-card",
+        isCompact && "compact-featured-card"
       )}
     >
       <Link
@@ -33,7 +33,7 @@ export function ArticleCard({
           "h-full",
           isCompact && article.thumbnailUrl
             ? "grid min-h-40 grid-cols-[minmax(0,1fr)_7rem] sm:grid-cols-[minmax(0,1fr)_8rem]"
-            : "flex flex-col",
+            : "flex flex-col"
         )}
         href={`/articles/${article.slug}`}
       >
@@ -43,14 +43,14 @@ export function ArticleCard({
               "relative aspect-5/3 overflow-hidden border-b border-border bg-muted",
               variant === "featured" && "aspect-16/9",
               isCompact &&
-                "order-2 aspect-auto min-h-40 border-b-0 border-l border-border",
+                "order-2 aspect-auto min-h-40 border-b-0 border-l border-border"
             )}
           >
             <Image
               alt=""
               className={cn(
                 "article-card-media",
-                isCompact ? "object-contain p-2" : "object-cover",
+                isCompact ? "object-contain p-2" : "object-cover"
               )}
               fill
               priority={priority}
@@ -58,8 +58,8 @@ export function ArticleCard({
                 variant === "featured"
                   ? "(min-width: 768px) 50vw, 100vw"
                   : isCompact
-                    ? "(min-width: 640px) 8rem, 7rem"
-                    : "100vw"
+                  ? "(min-width: 640px) 8rem, 7rem"
+                  : "100vw"
               }
               src={article.thumbnailUrl}
             />
@@ -68,7 +68,7 @@ export function ArticleCard({
         <div
           className={cn(
             "flex flex-1 flex-col gap-4 p-5 md:p-6",
-            isCompact && "order-1 gap-3 p-4 md:p-5",
+            isCompact && "order-1 gap-3 p-4 md:p-5"
           )}
         >
           <ArticleMeta date={article.date} tags={tags} />
@@ -76,26 +76,26 @@ export function ArticleCard({
             <h3
               className={cn(
                 "text-balance text-xl font-semibold tracking-tight md:text-2xl",
-                isCompact && "text-base md:text-lg",
+                isCompact && "text-base md:text-lg"
               )}
             >
               {article.title}
             </h3>
-            {article.excerpt ? (
+            {article.description ? (
               <p
                 className={cn(
                   "text-pretty leading-7 text-muted-foreground",
-                  isCompact && "line-clamp-2 text-sm leading-6",
+                  isCompact && "line-clamp-2 text-sm leading-6"
                 )}
               >
-                {article.excerpt}
+                {article.description}
               </p>
             ) : null}
           </div>
           <span
             className={cn(
               "mt-auto pt-4 text-sm font-medium",
-              isCompact && "pt-1 text-xs text-accent",
+              isCompact && "pt-1 text-xs text-accent"
             )}
           >
             Read article <span aria-hidden="true">↗</span>

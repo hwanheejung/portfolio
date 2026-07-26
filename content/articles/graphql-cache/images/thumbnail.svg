@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title">
-  <title id="title">GraphQL cache article placeholder</title>
-  <rect width="1200" height="720" fill="#171717"/>
-  <circle cx="420" cy="360" r="160" fill="none" stroke="#e535ab" stroke-width="24"/>
-  <circle cx="780" cy="360" r="160" fill="none" stroke="#e535ab" stroke-width="24"/>
-  <path d="M580 300h40M580 420h40" stroke="#f8f7f2" stroke-width="20"/>
-</svg>

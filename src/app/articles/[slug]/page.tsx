@@ -44,7 +44,7 @@ export async function generateMetadata({
 
   return {
     title: article.title,
-    description: article.excerpt,
+    description: article.description,
   };
 }
 
@@ -75,9 +75,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         <h1 className="mt-10 text-balance text-[clamp(2.8rem,8vw,6.5rem)] font-semibold leading-[0.95] tracking-[-0.06em]">
           {article.title}
         </h1>
-        {article.excerpt ? (
+        {article.description ? (
           <p className="mt-8 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl">
-            {article.excerpt}
+            {article.description}
           </p>
         ) : null}
         <div className="mt-8">

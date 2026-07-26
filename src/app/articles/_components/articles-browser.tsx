@@ -17,15 +17,15 @@ type ArticlesByCategory = Record<ArticleCategoryId, ArticleSummary[]>;
 type ActiveArticleByCategory = Record<ArticleCategoryId, string | null>;
 
 function getSpotlightArticles(
-  articlesByCategory: ArticlesByCategory,
+  articlesByCategory: ArticlesByCategory
 ): ActiveArticleByCategory {
   return Object.fromEntries(
     articleCategoryIds.map((category) => [
       category,
       articlesByCategory[category].find((article) =>
-        article.spotlightIn.includes(category),
+        article.spotlightIn.includes(category)
       )?.slug ?? null,
-    ]),
+    ])
   ) as ActiveArticleByCategory;
 }
 
@@ -75,9 +75,7 @@ function DisclosureArticle({
       className="article-disclosure"
       data-open={open}
       onBlur={(event) => {
-        if (
-          !event.currentTarget.contains(event.relatedTarget as Node | null)
-        ) {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           onFocusChange(null);
         }
       }}
@@ -148,7 +146,7 @@ function DisclosureArticle({
           <div className="article-disclosure-content">
             <div className="flex min-w-0 flex-col">
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base md:leading-7">
-                {article.excerpt}
+                {article.description}
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2">
@@ -158,7 +156,6 @@ function DisclosureArticle({
                   </Badge>
                 ))}
               </div>
-
             </div>
 
             {article.thumbnailUrl ? (
@@ -187,26 +184,27 @@ export function ArticlesBrowser({
   taxonomy: Taxonomy;
 }) {
   const [pinned, setPinned] = useState<ActiveArticleByCategory>(() =>
-    getSpotlightArticles(articlesByCategory),
+    getSpotlightArticles(articlesByCategory)
   );
-  const [hovered, setHovered] = useState<ActiveArticleByCategory>(() =>
-    Object.fromEntries(
-      articleCategoryIds.map((category) => [category, null]),
-    ) as ActiveArticleByCategory,
+  const [hovered, setHovered] = useState<ActiveArticleByCategory>(
+    () =>
+      Object.fromEntries(
+        articleCategoryIds.map((category) => [category, null])
+      ) as ActiveArticleByCategory
   );
-  const [focused, setFocused] = useState<ActiveArticleByCategory>(() =>
-    Object.fromEntries(
-      articleCategoryIds.map((category) => [category, null]),
-    ) as ActiveArticleByCategory,
+  const [focused, setFocused] = useState<ActiveArticleByCategory>(
+    () =>
+      Object.fromEntries(
+        articleCategoryIds.map((category) => [category, null])
+      ) as ActiveArticleByCategory
   );
 
   const orderedCategories = useMemo(
     () =>
       [...articleCategoryIds].sort(
-        (a, b) =>
-          taxonomy.categories[a].order - taxonomy.categories[b].order,
+        (a, b) => taxonomy.categories[a].order - taxonomy.categories[b].order
       ),
-    [taxonomy],
+    [taxonomy]
   );
 
   return (
@@ -250,7 +248,7 @@ export function ArticlesBrowser({
                         : {
                             ...current,
                             [category]: slug,
-                          },
+                          }
                     )
                   }
                   onToggle={() => {

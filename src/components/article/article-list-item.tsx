@@ -22,9 +22,9 @@ export function ArticleListItem({
           <h3 className="article-list-title text-balance text-xl font-semibold tracking-tight md:text-2xl">
             {article.title}
           </h3>
-          {article.excerpt ? (
+          {article.description ? (
             <p className="max-w-3xl leading-7 text-muted-foreground">
-              {article.excerpt}
+              {article.description}
             </p>
           ) : null}
           <ArticleMeta date={article.date} tags={tags} />

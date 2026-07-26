@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title">
-  <title id="title">Automation system article placeholder</title>
-  <rect width="1200" height="720" fill="#dff4e4"/>
-  <rect x="140" y="150" width="270" height="130" rx="24" fill="#171717"/>
-  <rect x="465" y="295" width="270" height="130" rx="24" fill="#03c75a"/>
-  <rect x="790" y="440" width="270" height="130" rx="24" fill="#171717"/>
-  <path d="M410 215h120v80M735 360h120v80" fill="none" stroke="#171717" stroke-width="16"/>
-</svg>

@@ -12,23 +12,11 @@ import {
   isPublishedArticleComplete,
 } from "../../../schema/article";
 import { type About, AboutSchema } from "../../../schema/about";
-import {
-  type Experience,
-  ExperienceSchema,
-} from "../../../schema/experience";
-import {
-  type Placements,
-  PlacementSchema,
-} from "../../../schema/placement";
-import {
-  type Taxonomy,
-  TaxonomySchema,
-} from "../../../schema/taxonomy";
+import { type Experience, ExperienceSchema } from "../../../schema/experience";
+import { type Placements, PlacementSchema } from "../../../schema/placement";
+import { type Taxonomy, TaxonomySchema } from "../../../schema/taxonomy";
 
-import {
-  resolveContentAssetPath,
-  resolveContentAssetUrl,
-} from "./assets";
+import { resolveContentAssetPath, resolveContentAssetUrl } from "./assets";
 import { parseMdxDocument } from "./frontmatter";
 
 const PROJECT_ROOT = process.cwd();
@@ -63,7 +51,7 @@ export class ContentValidationError extends Error {
       [
         "Content validation failed:",
         ...issues.map((issue) => `- ${issue.file}: ${issue.message}`),
-      ].join("\n"),
+      ].join("\n")
     );
     this.name = "ContentValidationError";
   }
@@ -81,7 +69,7 @@ async function directoryNames(directory: string) {
 async function readYamlFile<T>(
   filePath: string,
   schema: ZodType<T>,
-  issues: ContentIssue[],
+  issues: ContentIssue[]
 ): Promise<T | null> {
   try {
     const source = await readFile(filePath, "utf8");
@@ -112,7 +100,7 @@ async function assetExists(
   directory: string,
   assetPath: string,
   file: string,
-  issues: ContentIssue[],
+  issues: ContentIssue[]
 ) {
   const resolved = resolveContentAssetPath(directory, assetPath);
 
@@ -152,7 +140,6 @@ function validateMdxBody(body: string, file: string, issues: ContentIssue[]) {
       });
     }
   }
-
 }
 
 async function readArticles(issues: ContentIssue[]) {
@@ -164,7 +151,8 @@ async function readArticles(issues: ContentIssue[]) {
   } catch (error) {
     issues.push({
       file: "content/articles",
-      message: error instanceof Error ? error.message : "Unable to read directory.",
+      message:
+        error instanceof Error ? error.message : "Unable to read directory.",
     });
     return articles;
   }
@@ -183,7 +171,9 @@ async function readArticles(issues: ContentIssue[]) {
         for (const issue of result.error.issues) {
           issues.push({
             file: relativeFile,
-            message: `${issue.path.join(".") || "frontmatter"}: ${issue.message}`,
+            message: `${issue.path.join(".") || "frontmatter"}: ${
+              issue.message
+            }`,
           });
         }
         continue;
@@ -202,7 +192,7 @@ async function readArticles(issues: ContentIssue[]) {
         issues.push({
           file: relativeFile,
           message:
-            "Published articles require excerpt, thumbnail, and at least one category.",
+            "Published articles require description, thumbnail, and at least one category.",
         });
       }
 
@@ -211,12 +201,12 @@ async function readArticles(issues: ContentIssue[]) {
           articleDirectory,
           metadata.thumbnail,
           relativeFile,
-          issues,
+          issues
         );
       }
 
       const mdxAssets = document.body.matchAll(
-        /\b(?:src|poster)=["'](\.\/images\/[^"']+)["']/g,
+        /\b(?:src|poster)=["'](\.\/images\/[^"']+)["']/g
       );
       for (const match of mdxAssets) {
         if (match[1]) {
@@ -232,7 +222,7 @@ async function readArticles(issues: ContentIssue[]) {
           ? resolveContentAssetUrl(
               "articles",
               metadata.slug,
-              metadata.thumbnail,
+              metadata.thumbnail
             )
           : undefined,
       });
@@ -257,7 +247,8 @@ async function readExperiences(issues: ContentIssue[]) {
   } catch (error) {
     issues.push({
       file: "content/experiences",
-      message: error instanceof Error ? error.message : "Unable to read directory.",
+      message:
+        error instanceof Error ? error.message : "Unable to read directory.",
     });
     return experiences;
   }
@@ -265,11 +256,7 @@ async function readExperiences(issues: ContentIssue[]) {
   for (const folderName of experienceDirectories) {
     const experienceDirectory = path.join(EXPERIENCES_ROOT, folderName);
     const filePath = path.join(experienceDirectory, "index.yml");
-    const experience = await readYamlFile(
-      filePath,
-      ExperienceSchema,
-      issues,
-    );
+    const experience = await readYamlFile(filePath, ExperienceSchema, issues);
 
     if (!experience) {
       continue;
@@ -287,7 +274,7 @@ async function readExperiences(issues: ContentIssue[]) {
         experienceDirectory,
         image,
         path.relative(PROJECT_ROOT, filePath),
-        issues,
+        issues
       );
     }
 
@@ -311,19 +298,16 @@ function duplicateValues(values: readonly string[]) {
   return [...duplicates];
 }
 
-function validateRelations(
-  snapshot: ContentSnapshot,
-  issues: ContentIssue[],
-) {
+function validateRelations(snapshot: ContentSnapshot, issues: ContentIssue[]) {
   const articleBySlug = new Map(
-    snapshot.articles.map((article) => [article.slug, article]),
+    snapshot.articles.map((article) => [article.slug, article])
   );
   const experienceById = new Map(
-    snapshot.experiences.map((experience) => [experience.id, experience]),
+    snapshot.experiences.map((experience) => [experience.id, experience])
   );
 
   const categoryOrders = articleCategoryIds.map(
-    (category) => snapshot.taxonomy.categories[category].order,
+    (category) => snapshot.taxonomy.categories[category].order
   );
   if (new Set(categoryOrders).size !== categoryOrders.length) {
     issues.push({
@@ -385,7 +369,7 @@ function validateRelations(
 
   for (const category of articleCategoryIds) {
     const spotlighted = snapshot.articles.filter((article) =>
-      article.spotlightIn.includes(category),
+      article.spotlightIn.includes(category)
     );
 
     if (spotlighted.length > 1) {
@@ -425,7 +409,7 @@ function validateRelations(
   }
 
   for (const duplicate of duplicateValues(
-    snapshot.placements.home.featuredWorks,
+    snapshot.placements.home.featuredWorks
   )) {
     issues.push({
       file: "content/placements.yml",
@@ -475,7 +459,6 @@ function validateRelations(
       }
     }
   }
-
 }
 
 export async function inspectContent() {
@@ -485,20 +468,16 @@ export async function inspectContent() {
     await Promise.all([
       readArticles(issues),
       readExperiences(issues),
-      readYamlFile(
-        path.join(ABOUT_ROOT, "index.yml"),
-        AboutSchema,
-        issues,
-      ),
+      readYamlFile(path.join(ABOUT_ROOT, "index.yml"), AboutSchema, issues),
       readYamlFile(
         path.join(CONTENT_ROOT, "taxonomy.yml"),
         TaxonomySchema,
-        issues,
+        issues
       ),
       readYamlFile(
         path.join(CONTENT_ROOT, "placements.yml"),
         PlacementSchema,
-        issues,
+        issues
       ),
     ]);
 
@@ -511,16 +490,11 @@ export async function inspectContent() {
       ABOUT_ROOT,
       about.hero.image,
       "content/about/index.yml",
-      issues,
+      issues
     );
   }
   for (const image of about.maker.gallery) {
-    await assetExists(
-      ABOUT_ROOT,
-      image,
-      "content/about/index.yml",
-      issues,
-    );
+    await assetExists(ABOUT_ROOT, image, "content/about/index.yml", issues);
   }
 
   const snapshot: ContentSnapshot = {
@@ -556,7 +530,7 @@ export async function getArticles(options?: { includeDraft?: boolean }) {
 
 export async function getArticle(
   slug: string,
-  options?: { includeDraft?: boolean },
+  options?: { includeDraft?: boolean }
 ) {
   const articles = await getArticles(options);
   return articles.find((article) => article.slug === slug) ?? null;
@@ -580,7 +554,9 @@ export async function getPlacements() {
 
 export async function resolveArticleSlugs(slugs: readonly string[]) {
   const articles = await getArticles({ includeDraft: false });
-  const articleBySlug = new Map(articles.map((article) => [article.slug, article]));
+  const articleBySlug = new Map(
+    articles.map((article) => [article.slug, article])
+  );
 
   return slugs.map((slug) => {
     const article = articleBySlug.get(slug);
@@ -594,7 +570,7 @@ export async function resolveArticleSlugs(slugs: readonly string[]) {
 export async function resolveExperienceIds(ids: readonly string[]) {
   const experiences = await getExperiences();
   const experienceById = new Map(
-    experiences.map((experience) => [experience.id, experience]),
+    experiences.map((experience) => [experience.id, experience])
   );
 
   return ids.map((id) => {
@@ -608,7 +584,7 @@ export async function resolveExperienceIds(ids: readonly string[]) {
 
 export function orderArticlesForCategory(
   articles: readonly ArticleSummary[],
-  category: ArticleCategoryId,
+  category: ArticleCategoryId
 ) {
   return articles
     .filter((article) => article.categories[category].length > 0)

@@ -3,5 +3,4 @@ home:
     - karrot
     - naver
   featuredArticles:
-    - graphql-cache
-    - adder
+    - feature-flag

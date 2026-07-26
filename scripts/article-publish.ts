@@ -24,27 +24,22 @@ import {
 } from "./article-utils";
 
 const slug = SlugSchema.parse(process.argv[2]);
-const articleDirectory = path.join(
-  PROJECT_ROOT,
-  "content",
-  "articles",
-  slug,
-);
+const articleDirectory = path.join(PROJECT_ROOT, "content", "articles", slug);
 const articleFile = path.join(articleDirectory, "index.mdx");
 const originalSource = await readFile(articleFile, "utf8");
 const document = await readArticleDocument(articleFile);
 const current = ArticleMetadataSchema.parse(document.data);
 const taxonomy = await getTaxonomy();
 
-const excerpt =
-  current.excerpt ?? (await ask("Excerpt used in article cards and metadata"));
+const description =
+  current.description ??
+  (await ask("description used in article cards and metadata"));
 const thumbnail =
-  current.thumbnail ??
-  (await ask("Thumbnail path", "./images/thumbnail.webp"));
+  current.thumbnail ?? (await ask("Thumbnail path", "./images/thumbnail.webp"));
 
 let categories = current.categories;
 const hasCategory = articleCategoryIds.some(
-  (category) => categories[category].length > 0,
+  (category) => categories[category].length > 0
 );
 if (!hasCategory) {
   categories = await chooseCategories(taxonomy);
@@ -68,7 +63,7 @@ if (!thumbnailPath) {
 }
 await assertPathExists(
   thumbnailPath,
-  `Thumbnail "${thumbnail}" does not exist.`,
+  `Thumbnail "${thumbnail}" does not exist.`
 );
 
 const knownArticles = await getArticles({ includeDraft: true });
@@ -82,7 +77,7 @@ for (const relatedSlug of current.related) {
 const metadata = ArticleMetadataSchema.parse({
   ...current,
   date: current.date || today(),
-  excerpt,
+  description,
   thumbnail,
   categories,
   draft: false,
@@ -91,7 +86,7 @@ const metadata = ArticleMetadataSchema.parse({
 await writeFile(
   articleFile,
   serializeMdxDocument(metadata, document.body),
-  "utf8",
+  "utf8"
 );
 
 const validation = await inspectContent();

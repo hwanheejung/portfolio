@@ -6,7 +6,11 @@ export default defineConfig([
   ...nextVitals,
   ...nextTypeScript,
   {
-    files: ["src/components/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}", "src/shared/**/*.{ts,tsx}"],
+    files: [
+      "src/components/**/*.{ts,tsx}",
+      "src/lib/**/*.{ts,tsx}",
+      "src/shared/**/*.{ts,tsx}",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -26,7 +30,6 @@ export default defineConfig([
     "out/**",
     "public/_content/**",
     "coverage/**",
-    "playwright-report/**",
     "test-results/**",
   ]),
 ]);

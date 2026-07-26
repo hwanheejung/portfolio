@@ -37,7 +37,7 @@ function WorkCard({ article }: { article: ArticleSummary }) {
       <div className="flex min-h-52 flex-col p-5 md:p-6">
         <h4 className="display-font text-xl">{article.title}</h4>
         <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
-          {article.excerpt}
+          {article.description}
         </p>
         <div className="work-card-cta mt-auto w-fit pt-8 text-sm font-medium">
           View project
@@ -65,9 +65,7 @@ export default async function HomePage() {
     getPlacements(),
     getTaxonomy(),
   ]);
-  const experiences = await resolveExperienceIds(
-    placements.home.featuredWorks,
-  );
+  const experiences = await resolveExperienceIds(placements.home.featuredWorks);
   const workArticleSlugs = [
     ...new Set(experiences.flatMap((experience) => experience.articles)),
   ];
@@ -76,7 +74,7 @@ export default async function HomePage() {
     resolveArticleSlugs(placements.home.featuredArticles),
   ]);
   const workArticleBySlug = new Map(
-    workArticles.map((article) => [article.slug, article]),
+    workArticles.map((article) => [article.slug, article])
   );
   const workGroups = experiences
     .map((experience) => ({
@@ -162,7 +160,7 @@ export default async function HomePage() {
                     {primaryArticle.title}
                   </h3>
                   <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-                    {primaryArticle.excerpt}
+                    {primaryArticle.description}
                   </p>
                   <div className="mt-5">
                     <ArticleMeta
@@ -203,7 +201,7 @@ export default async function HomePage() {
                 <div>
                   <h3 className="display-font text-lg">{article.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {article.excerpt}
+                    {article.description}
                   </p>
                 </div>
                 <span aria-hidden="true" className="row-arrow text-accent">

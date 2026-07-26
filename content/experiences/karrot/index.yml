@@ -2,12 +2,11 @@ id: karrot
 organization: Karrot
 role: Product Engineer
 period:
-  start: "2023"
-  end: null
+  start: "2025.10"
+  end: "2026.04"
 summary: Building tools and product experiences that help local teams move with clarity.
 articles:
-  - karrot-local-jobs
-  - automation-system
+  - feature-flag
 highlights:
   - Designed automation systems for recurring operational work.
   - Connected product context with maintainable frontend architecture.

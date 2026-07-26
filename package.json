@@ -13,7 +13,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
     "article:new": "node --import tsx scripts/article-new.ts",
     "article:publish": "node --import tsx scripts/article-publish.ts",
     "article:check": "node --import tsx scripts/article-check.ts",
@@ -36,7 +35,6 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/mdx": "^2.0.13",
     "@types/node": "^24.10.0",

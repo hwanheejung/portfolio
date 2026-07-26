@@ -1,10 +1,6 @@
 import { z } from "zod";
 
-export const articleCategoryIds = [
-  "automation",
-  "deep-dive",
-  "works",
-] as const;
+export const articleCategoryIds = ["automation", "deep-dive", "works"] as const;
 
 export const ArticleCategoryIdSchema = z.enum(articleCategoryIds);
 export type ArticleCategoryId = z.infer<typeof ArticleCategoryIdSchema>;
@@ -14,7 +10,7 @@ export const SlugSchema = z
   .min(1)
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    "Use lowercase kebab-case characters only.",
+    "Use lowercase kebab-case characters only."
   );
 
 const DateSchema = z
@@ -42,7 +38,7 @@ export const ArticleMetadataSchema = z
     title: z.string().trim().min(1),
     slug: SlugSchema,
     date: DateSchema,
-    excerpt: z.string().trim().min(1).optional(),
+    description: z.string().trim().min(1).optional(),
     thumbnail: z.string().trim().min(1).optional(),
     draft: z.boolean().default(true),
     categories: ArticleCategoriesSchema,
@@ -59,8 +55,8 @@ export type ArticleSummary = ArticleMetadata & {
 
 export function isPublishedArticleComplete(article: ArticleMetadata) {
   const hasCategory = articleCategoryIds.some(
-    (category) => article.categories[category].length > 0,
+    (category) => article.categories[category].length > 0
   );
 
-  return Boolean(article.excerpt && article.thumbnail && hasCategory);
+  return Boolean(article.description && article.thumbnail && hasCategory);
 }
