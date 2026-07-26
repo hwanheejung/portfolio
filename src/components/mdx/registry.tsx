@@ -3,26 +3,26 @@ import type { ComponentProps, ReactNode } from "react";
 import type { MDXComponents } from "mdx/types";
 
 import { Callout } from "./callout";
-import { Circuit } from "./circuit";
-import { Figure, type FigureProps } from "./figure";
-import { TruthTable } from "./truth-table";
+import { Column, Columns } from "./columns";
+import { Figure } from "./figure";
+import { Metric } from "./metric";
+import { SectionHeading } from "./section-heading";
 
-function resolveArticleAsset(slug: string, source: string) {
-  if (!source.startsWith("./images/")) {
-    return source;
-  }
-
-  return `/_content/articles/${slug}/${source.slice(2)}`;
-}
-
-export const baseMdxComponents: MDXComponents = {
-  Callout,
-  Circuit,
-  Figure,
-  TruthTable,
+type FigureProps = ComponentProps<typeof Figure>;
+type Props = {
+  children: ReactNode;
 };
 
-export function createArticleMdxComponents(slug: string): MDXComponents {
+const baseMdxComponents: MDXComponents = {
+  Callout,
+  Column,
+  Columns,
+  Figure,
+  Metric,
+  SectionHeading,
+};
+
+const createArticleMdxComponents = (slug: string): MDXComponents => {
   return {
     ...baseMdxComponents,
     Figure: (props: FigureProps) => (
@@ -38,8 +38,18 @@ export function createArticleMdxComponents(slug: string): MDXComponents {
       );
     },
   };
-}
+};
 
-export function MdxProse({ children }: { children: ReactNode }) {
+const MdxProse = ({ children }: Props) => {
   return <div className="article-prose">{children}</div>;
-}
+};
+
+export { baseMdxComponents, createArticleMdxComponents, MdxProse };
+
+const resolveArticleAsset = (slug: string, source: string) => {
+  if (!source.startsWith("./images/")) {
+    return source;
+  }
+
+  return `/_content/articles/${slug}/${source.slice(2)}`;
+};

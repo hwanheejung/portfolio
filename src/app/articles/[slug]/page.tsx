@@ -68,15 +68,18 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <article className="page-shell">
-      <header className="mx-auto max-w-4xl border-b border-border py-16 md:py-24">
-        <Link className="text-sm text-muted-foreground" href="/articles">
+      <header className="mx-auto flex max-w-4xl flex-col items-center border-b border-border py-16 md:py-24">
+        <Link
+          className="mr-auto text-sm text-muted-foreground"
+          href="/articles"
+        >
           ← Articles
         </Link>
-        <h1 className="mt-10 text-balance text-[clamp(2.8rem,8vw,6.5rem)] font-semibold leading-[0.95] tracking-[-0.06em]">
+        <h1 className="mt-10 text-center text-[clamp(2.8rem,8vw,3.5rem)] leading-[1.1] font-[550] tracking-[-0.035em] text-balance">
           {article.title}
         </h1>
         {article.description ? (
-          <p className="mt-8 max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl">
+          <p className="mt-4 max-w-2xl text-center text-lg leading-[1.6] text-muted-foreground">
             {article.description}
           </p>
         ) : null}
@@ -88,7 +91,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl py-12 md:py-20">
+      <div className="mx-auto max-w-4xl py-12 md:py-20">
         <MdxProse>
           <Content components={createArticleMdxComponents(slug)} />
         </MdxProse>

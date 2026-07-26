@@ -4,10 +4,11 @@ import "./globals.css";
 
 import { SiteFooter } from "./_components/site-footer";
 import { SiteNavigation } from "./_components/site-navigation";
+import { ContentDevTools } from "@/devtools";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   ),
   title: {
     default: "Hwanhee — Product Engineer",
@@ -34,6 +35,7 @@ export default function RootLayout({
         <SiteNavigation />
         <main>{children}</main>
         <SiteFooter />
+        {process.env.NODE_ENV === "development" ? <ContentDevTools /> : null}
       </body>
     </html>
   );

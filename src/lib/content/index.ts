@@ -27,9 +27,11 @@ const ABOUT_ROOT = path.join(CONTENT_ROOT, "about");
 
 const ALLOWED_MDX_COMPONENTS = new Set([
   "Callout",
-  "Circuit",
+  "Column",
+  "Columns",
   "Figure",
-  "TruthTable",
+  "Metric",
+  "SectionHeading",
 ]);
 
 export type ContentIssue = {

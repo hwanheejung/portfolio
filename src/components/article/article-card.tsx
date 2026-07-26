@@ -41,7 +41,7 @@ export function ArticleCard({
           <div
             className={cn(
               "relative aspect-5/3 overflow-hidden border-b border-border bg-muted",
-              variant === "featured" && "aspect-16/9",
+              variant === "featured" && "aspect-video",
               isCompact &&
                 "order-2 aspect-auto min-h-40 border-b-0 border-l border-border"
             )}
