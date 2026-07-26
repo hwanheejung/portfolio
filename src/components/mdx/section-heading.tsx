@@ -5,7 +5,7 @@ type Props = {
 
 const SectionHeading = ({ title, eyebrow }: Props) => {
   return (
-    <header className="mt-[clamp(5rem,10vw,7rem)] pb-12">
+    <header className="mt-[clamp(5rem,10vw,7rem)] pb-6">
       {eyebrow ? (
         <p className="m-0 mb-2 text-xs! leading-[1.2] font-medium tracking-[0.08em] text-[color-mix(in_srgb,var(--muted-foreground)_78%,transparent)]! uppercase">
           {eyebrow}
@@ -16,7 +16,7 @@ const SectionHeading = ({ title, eyebrow }: Props) => {
       </h2>
       <div
         aria-hidden="true"
-        className="mt-8 h-px w-full bg-[color-mix(in_srgb,var(--muted-foreground)_58%,transparent)]"
+        className="mt-6 h-px w-full bg-[color-mix(in_srgb,var(--muted-foreground)_58%,transparent)]"
       />
     </header>
   );

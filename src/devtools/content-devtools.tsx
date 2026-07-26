@@ -82,7 +82,7 @@ const ContentDevTools = () => {
       aria-label="MDX component tools"
       className={cn(
         materialClasses,
-        "fixed top-4 right-4 bottom-4 z-50 flex w-[min(25rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.75rem]",
+        "fixed inset-x-4 bottom-4 z-50 flex h-[52dvh] max-h-[36rem] flex-col overflow-hidden rounded-[1.75rem]",
       )}
     >
       <header className="flex items-center justify-between bg-[linear-gradient(180deg,rgb(255_255_255/0.025),transparent)] px-5 py-4 shadow-[0_1px_0_rgb(255_255_255/0.055)]">
@@ -131,8 +131,8 @@ const ContentDevTools = () => {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <section className="px-5 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto md:grid md:grid-cols-3 md:overflow-hidden">
+        <section className="px-5 py-5 md:overflow-y-auto md:border-r md:border-white/7.5">
           <h3 className="text-lg font-semibold tracking-[-0.018em]">
             {selected.name}
           </h3>
@@ -196,7 +196,7 @@ const ContentDevTools = () => {
           </div>
         </section>
 
-        <section className="px-5 py-5">
+        <section className="px-5 py-5 md:overflow-y-auto md:border-r md:border-white/7.5">
           <p className="text-[0.68rem] font-semibold tracking-[0.04em] text-muted-foreground">
             Preview
           </p>
@@ -214,7 +214,7 @@ const ContentDevTools = () => {
           </div>
         </section>
 
-        <section className="px-5 py-5">
+        <section className="px-5 py-5 md:overflow-y-auto">
           <div className="flex items-center justify-between gap-4">
             <p className="text-[0.68rem] font-semibold tracking-[0.04em] text-muted-foreground">
               MDX snippet

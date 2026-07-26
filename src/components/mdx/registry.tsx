@@ -6,6 +6,7 @@ import { Callout } from "./callout";
 import { Column, Columns } from "./columns";
 import { Figure } from "./figure";
 import { Metric } from "./metric";
+import { Numbering } from "./numbering";
 import { SectionHeading } from "./section-heading";
 
 type FigureProps = ComponentProps<typeof Figure>;
@@ -19,6 +20,7 @@ const baseMdxComponents: MDXComponents = {
   Columns,
   Figure,
   Metric,
+  Numbering,
   SectionHeading,
 };
 

@@ -4,6 +4,7 @@ import { Callout } from "@/components/mdx/callout";
 import { Column, Columns } from "@/components/mdx/columns";
 import { Figure } from "@/components/mdx/figure";
 import { Metric } from "@/components/mdx/metric";
+import { Numbering } from "@/components/mdx/numbering";
 import { SectionHeading } from "@/components/mdx/section-heading";
 
 type CalloutBackground = NonNullable<
@@ -132,6 +133,16 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
           value: String(count),
         })),
       },
+      {
+        key: "align",
+        label: "Content alignment",
+        type: "select",
+        initialValue: "start",
+        options: [
+          { label: "Start", value: "start" },
+          { label: "Center", value: "center" },
+        ],
+      },
       ...Array.from({ length: 6 }, (_, index): DevtoolField => ({
         key: `width${index + 1}`,
         label: `Column ${index + 1} width`,
@@ -152,8 +163,10 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
             Math.max(0.1, Number(values[`width${index + 1}`]) || 1),
           );
           const widthProp = width === 1 ? "" : ` width={${width}}`;
+          const alignProp =
+            values.align === "center" ? ' align="center"' : "";
 
-          return `  <Column${widthProp}>\n    Column ${
+          return `  <Column${widthProp}${alignProp}>\n    Column ${
             index + 1
           } content.\n  </Column>`;
         },
@@ -168,6 +181,7 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
         <Columns>
           {Array.from({ length: count }, (_, index) => (
             <Column
+              align={values.align === "center" ? "center" : "start"}
               key={index}
               width={Math.min(
                 12,
@@ -182,6 +196,23 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
         </Columns>
       );
     },
+  },
+  {
+    name: "Numbering",
+    description: "Mark a process step with a compact circular number.",
+    fields: [
+      {
+        key: "value",
+        label: "Number",
+        type: "number",
+        initialValue: "1",
+      },
+    ],
+    createSnippet: (values) =>
+      `<Numbering value={${Math.max(0, Number(values.value) || 1)}} />`,
+    renderPreview: (values) => (
+      <Numbering value={Math.max(0, Number(values.value) || 1)} />
+    ),
   },
   {
     name: "Metric",

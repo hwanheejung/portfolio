@@ -6,11 +6,14 @@ import {
   type ReactNode,
 } from "react";
 
+import { cn } from "@/shared/lib/cn";
+
 type Props = {
   children: ReactNode;
 };
 
 type ColumnProps = {
+  align?: "start" | "center";
   children?: ReactNode;
   width?: number;
 };
@@ -22,7 +25,9 @@ const Columns = ({ children }: Props) => {
   const count = columns.length;
 
   if (columns.some((column) => column.type !== Column)) {
-    throw new Error("Columns only accepts Column components as direct children.");
+    throw new Error(
+      "Columns only accepts Column components as direct children."
+    );
   }
 
   if (count < 2 || count > 6) {
@@ -33,7 +38,7 @@ const Columns = ({ children }: Props) => {
 
   return (
     <div
-      className="my-8 grid grid-cols-1 gap-3 md:grid-cols-(--mdx-column-template) md:gap-4"
+      className="my-1 grid grid-cols-1 gap-3 md:grid-cols-(--mdx-column-template) md:gap-4"
       data-column-count={count}
       style={{ "--mdx-column-template": template } as CSSProperties}
     >
@@ -44,9 +49,16 @@ const Columns = ({ children }: Props) => {
 
 export { Column, Columns };
 
-const Column = ({ children }: ColumnProps) => {
+const Column = ({ align = "start", children }: ColumnProps) => {
   return (
-    <div className="min-w-0 space-y-5 *:first:mt-0 *:last:mb-0">
+    <div
+      className={cn(
+        "min-w-0 *:first:mt-0 *:last:mb-0",
+        align === "center"
+          ? "flex flex-col items-center gap-3 text-center"
+          : "space-y-5"
+      )}
+    >
       {children}
     </div>
   );

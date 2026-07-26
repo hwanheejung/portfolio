@@ -31,6 +31,7 @@ const ALLOWED_MDX_COMPONENTS = new Set([
   "Columns",
   "Figure",
   "Metric",
+  "Numbering",
   "SectionHeading",
 ]);
 

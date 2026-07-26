@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { Callout } from "@/components/mdx/callout";
 import { Column, Columns } from "@/components/mdx/columns";
 import { Metric } from "@/components/mdx/metric";
+import { Numbering } from "@/components/mdx/numbering";
 import { SectionHeading } from "@/components/mdx/section-heading";
 
 function renderColumns(count: number) {
@@ -62,9 +63,35 @@ describe("Columns", () => {
     expect(markup).toContain("bg-sky-400/10");
   });
 
+  it("centers column content when requested", () => {
+    const markup = renderToStaticMarkup(
+      createElement(
+        Columns,
+        null,
+        createElement(Column, { align: "center" }, "Centered"),
+        createElement(Column, null, "Default"),
+      ),
+    );
+
+    expect(markup).toContain("items-center");
+    expect(markup).toContain("text-center");
+  });
+
   it("rejects column counts outside the supported range", () => {
     expect(() => renderColumns(1)).toThrow();
     expect(() => renderColumns(7)).toThrow();
+  });
+});
+
+describe("Numbering", () => {
+  it("renders a zero-padded circular step label", () => {
+    const markup = renderToStaticMarkup(
+      createElement(Numbering, { value: 1 }),
+    );
+
+    expect(markup).toContain('aria-label="Step 1"');
+    expect(markup).toContain(">01</span>");
+    expect(markup).toContain("rounded-full");
   });
 });
 
