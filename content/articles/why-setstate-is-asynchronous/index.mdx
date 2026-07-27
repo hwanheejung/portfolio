@@ -1,0 +1,581 @@
+---
+title: Why Does setState Work Asynchronously?
+description: A deep dive into how React evolved from batching state updates to concurrent rendering and the Lane model.
+slug: why-setstate-is-asynchronous
+date: 2026-01-06
+draft: false
+categories:
+  automation: []
+  deep-dive:
+    - react
+  works: []
+spotlightIn: []
+related: []
+thumbnail: "./images/react-lanes.png"
+---
+
+This is less an attempt to memorize the “correct answer” to an interview
+question than a record of following that question into the way React defines
+state updates and rendering—and the choices it made to solve the problems it
+found there.
+
+I usually like writing whose overall structure is visible from the beginning.
+Each paragraph should stay close to its subject, and the reader should have a
+natural sense of where they are. This article takes a slightly different path.
+“Why does `setState` work asynchronously?” is not a summary of the whole
+article so much as its entrance. Follow it carefully and it leads into rendering
+models, priority, user experience, and concurrency—like a small opening to an
+anthill that reveals a surprisingly deep structure once you start digging.
+
+We will begin at that entrance and trace why React chose not to apply state
+immediately, and what that choice eventually made possible.
+
+# Part 1: Because It Is a More Efficient Structure
+
+There is no single reason `setState` developed into its current form. The design
+is better understood as several decisions, made from different perspectives,
+overlapping to produce the structure we use today.
+
+That is also why a new concept can feel like an ocean with no visible shore.
+“Why was it designed this way?” often cannot be answered with one reason. But
+when you approach the question from several directions, those perspectives
+eventually converge into an “aha” moment. We will look at `setState` in the same
+way.
+
+<SectionHeading title="1. UI = f(state): UI as a Pure Function" />
+
+Begin with a simple assumption: *what if calling `setState` changed the state
+and redrew the screen immediately?*
+
+At first, that sounds direct and intuitive. Change the state and the UI changes.
+But the model reaches its limits quickly:
+
+- React is rendering component A.
+- `setState` is called halfway through that work.
+- The state changes immediately.
+
+What should React do with the UI it has already calculated? It could throw the
+work away and restart, or inject the new state into the middle of the existing
+calculation. Neither is elegant. Rendering becomes an unpredictable computation
+whose conditions keep changing while it runs.
+
+React's basic view of rendering is mathematical:
+
+> UI = f(state, props)
+
+Rendering is not merely drawing pixels. It is the computation that receives the
+current state and props as inputs and determines what UI should exist. The
+important premise is that *the same input should always produce the same
+result*.
+
+If state changes halfway through the calculation, the function can no longer be
+trusted. A function that continues with externally changed inputs is difficult
+to predict and just as difficult to optimize.
+
+Safe rendering therefore requires its inputs to remain stable while the
+calculation is in progress. React separates this work into a Render Phase, which
+calculates UI from state and props, and a Commit Phase, which applies the result
+to the DOM and runs effects. Side effects are forbidden during the Render Phase
+because this phase is only a calculation.
+
+Seen in that context, “apply the update on the next cycle” has a precise
+meaning: *the update does not change the current calculation; it becomes an
+input to the next render*.
+
+The asynchronous behavior of `setState` is therefore not merely a performance
+trick. It is a structural choice that makes rendering a safe computation.
+
+<SectionHeading title="2. A Computational View: Intermediate Steps Do Not Matter" />
+
+Consider this code:
+
+```typescript
+setA(1)
+setB(2)
+setC(3)
+```
+
+From an imperative point of view, it looks like three updates. React, however,
+is ultimately less interested in how many intermediate steps occurred than in
+the final question: *given the resulting state, what UI should it calculate?*
+
+Calculating once with only A changed, again with A and B changed, and then a
+third time with A, B, and C changed repeats work whose intermediate results are
+not useful. React therefore collects updates and discards unnecessary
+intermediate calculations. What we call batching is a prerequisite for this
+computational model.
+
+<SectionHeading title="3. User and Developer Experience: Stability over Raw Speed" />
+
+What makes a good UI? A UI is not necessarily good just because it changes as
+quickly as possible.
+
+A list that jumps during scrolling, a page that flashes or freezes while
+typing, or an interface that shows no response after a click can all result when
+every small state change immediately triggers rendering. The render calculation
+interrupts the user's interaction.
+
+For user experience, “could the user keep acting without interruption?” matters
+more than “how quickly did something change?”
+
+- During typing, typing should take priority.
+- Immediately after a click, feedback is important.
+- During a page transition, some work can arrive slightly later.
+
+React can make these distinctions only if rendering does not have to execute
+immediately. When every update has the same importance, there is no way to
+choose what matters now.
+
+This stability matters to developers too. When state is applied immediately,
+update timing is scattered and render results become harder to reconstruct
+mentally. When updates are collected and applied together, debugging and
+reasoning become simpler.
+
+So the asynchronous behavior of `setState` is not only a performance decision.
+It gives users an uninterrupted experience and developers a predictable model.
+
+# Part 2: Optimization for a Smoother User Experience
+
+Part 1 explained why collecting updates is safer and more predictable than
+rendering immediately after every state change. One problem remains: collecting
+work does not guarantee a good experience if the calculation itself takes a
+long time. Even a batched render can still leave the user staring at a frozen
+screen.
+
+<SectionHeading title="1. Blocking Rendering: Why Does Everything Stutter?" />
+
+In a simple React application, blocking rendering—finishing a render in one
+uninterrupted pass—is rarely a problem. The component tree is small, state
+changes are limited, and Virtual DOM diffing is fast.
+
+The problem becomes visible when an application filters or sorts thousands of
+items. The interface begins to stutter, and a technical detail becomes a user
+experience problem. Debounce and throttle can hide some symptoms, but they do
+not remove the underlying limitation.
+
+<figure className="article-video">
+  <video
+    controls
+    playsInline
+    preload="metadata"
+    src="/_content/articles/why-setstate-is-asynchronous/images/perf-sync.mp4"
+  >
+    Your browser does not support the video element.
+  </video>
+  <figcaption>
+    Source:{" "}
+    <a href="https://dawchihliou.github.io/articles/stress-testing-concurrent-features-in-react-18">
+      Stress Testing Concurrent Features in React 18
+    </a>
+  </figcaption>
+</figure>
+
+In the video, the `SearchBar` does not respond as the user types. It freezes and
+then applies several characters at once. The 3D scene on the same screen drops
+frames as well, making the entire UI feel blocked.
+
+<Figure
+  src="./images/blocking-rendering-profile.png"
+  alt="Chrome Performance panel showing repeated long tasks after keypress events."
+  caption="Each keypress starts a large render task. The longest occupies the main thread for almost 0.8 seconds."
+  width={1600}
+  height={967}
+/>
+
+The Performance panel shows a large task for each keypress. For every input,
+React calculates the next result for both `SearchBar` and `Scene`, occupying the
+main thread for a long stretch. The longest task takes almost 0.8 seconds.
+During that time JavaScript owns the main thread, the browser cannot do other
+work, and user input cannot be processed. That is why the page feels slow.
+
+<SectionHeading title="2. The Expiration Time Model: When Priority Was Enough" />
+
+Before React 18, React treated rendering as a comparatively simple scheduling
+problem. It asked how urgent an update was and encoded both priority and
+batching in a numeric Expiration Time.
+
+Representative constants looked like this:
+
+```typescript
+const NoWork = 0;
+const Never = 1;
+const Idle = 2;
+const Sync = MAX_SIGNED_31_BIT_INT;
+const Batched = Sync - 1;
+```
+
+[See the React 16.12 source.](https://github.com/facebook/react/blob/v16.12.0/packages/react-reconciler/src/ReactFiberExpirationTime.js#L23-L40)
+
+The names and values carry several historical meanings because `expirationTime`
+was used differently by the scheduler and reconciler. The important point here
+is simply that React assigned every update a numeric value. That value
+simultaneously represented:
+
+- the update's priority,
+- which updates should be grouped into the same batch, and
+- how much work should be included in a render.
+
+Larger values represented more urgent work. Updates with the same expiration
+time were treated as belonging to the same event flow. React could therefore
+decide which priority to process now and skip less urgent subtrees during that
+render.
+
+Looking back from modern React, the limits are clear:
+
+- Every decision is a linear numeric comparison.
+- Priority, batching, and inclusion are tightly coupled in one number.
+- A completed render is always expected to reach the screen eventually.
+- Rendering is synchronous: if priority is A > B > C, React cannot work on B
+  before A finishes, or on C before both A and B finish.
+
+When the only problem was deciding what to draw first, these were not really
+limitations. The simpler model was sufficient.
+
+<SectionHeading title="3. Suspense Broke the Old Assumptions" />
+
+Suspense formally introduced a new rendering state: *UI that is not ready
+yet*. Previously, IO-bound delays such as network, file, or asynchronous
+requests were usually handled outside rendering with branches such as
+`isLoading`. With Suspense, React may discover during rendering that required
+data or code is not ready.
+
+React can stop that render instead of forcing it to completion, commit a
+fallback, and retry when the dependency becomes available. The rendering model
+therefore expanded to include IO-bound delays, suspension, scheduling, and
+resumption.
+
+This exposed the limits of Expiration Time. Because the model converted priority
+into a deadline, nearby updates with the same priority tended to share similar
+expiration values. After Suspense, however, rendering naturally moves through
+suspended, retried, and partially committed states. One update may be blocked
+on data while another can proceed. A single time value cannot precisely express
+whether work is possible, blocked, or ready to retry.
+
+React 18 also needed different strategies for transitions, Suspense boundaries,
+and hydration. Updates had to be classified and scheduled at a finer
+granularity.
+
+<SectionHeading title="4. Concurrency: React's Chosen Solution" />
+
+The problem can now be summarized like this:
+
+- A render can start without completing.
+- A render in progress can become obsolete.
+- Some renders should wait, while others should be abandoned.
+
+A purely synchronous rendering model cannot satisfy these conditions. The
+problem is no longer only computation speed; it is how time should be shared.
+Concurrency provides the solution.
+
+<details className="article-toggle">
+  <summary>Concurrency vs. Parallelism</summary>
+  <div className="article-toggle-content">
+    <Figure
+      src="./images/concurrency-vs-parallelism.png"
+      alt="Comparison of concurrency, which interleaves work, and parallelism, which executes work simultaneously."
+      caption="Concurrency structures independent work so that it appears to progress together; parallelism performs multiple operations at the same instant."
+      width={1624}
+      height={724}
+    />
+
+    Parallelism executes multiple operations at the same time. Concurrency
+    divides two or more independent tasks into pieces and switches between them
+    so they appear to progress together. It does not require multiple JavaScript
+    threads, but it does require context switching.
+
+    - Concurrency is about dealing with multiple independent tasks at once;
+      parallelism is about executing related operations at the same instant.
+    - Concurrency describes how to structure several tasks; parallelism
+      describes how to run several tasks simultaneously.
+  </div>
+</details>
+
+Concurrency is a useful answer because rendering is CPU-bound. Running component
+functions, calculating hooks, constructing a Fiber tree for diffing, and
+determining DOM changes are all computations. They execute synchronously on the
+main thread. As lists grow, trees deepen, or updates cascade, the work can
+stretch from a few milliseconds to tens of milliseconds, delaying input and
+scrolling.
+
+JavaScript is single-threaded and React rendering is JavaScript work, so React
+cannot simply `await` it or send it to a background thread. Instead of making
+the calculation itself asynchronous, React made rendering **interruptible,
+resumable, and disposable**.
+
+The [React 18 announcement](https://react.dev/blog/2022/03/29/react-v18)
+describes concurrency as a behind-the-scenes mechanism that lets React prepare
+multiple versions of the UI at the same time. “Prepare” is the revealing word:
+React can calculate more than one possibility and choose the most appropriate
+result.
+
+All of this builds on the decision from Part 1. If `setState` forced a render
+immediately, React could not divide, pause, resume, or discard that work.
+
+# Part 3: The Lane Model for Finer-Grained Rendering
+
+<SectionHeading title="1. Updates as a Set, Not a Line: Why Bitmasking?" />
+
+The weakness of Expiration Time was not simply a lack of priority levels. It was
+that unrelated decisions—priority, deadline, and batching—were tightly coupled
+to one number.
+
+Real UI interactions rarely have only one meaning. A single keystroke in a
+search field may create several updates:
+
+- The input value should appear immediately.
+- Search results can arrive slightly later.
+- A render for an older query may be discarded.
+
+Updates with different priorities and different fates coexist in one flow.
+Trying to express them as a single line creates a natural limit. React instead
+treats pending work as a *set that can contain several Lanes at once*, using a
+bitmask as its representation.
+
+Conceptually:
+
+```typescript
+const lanes = { SyncLane, TransitionLane }
+```
+
+Internally, the set can be represented like this:
+
+```text
+SyncLane        → 00000001
+TransitionLane  → 00000100
+
+Both included   → 00000101
+```
+
+`00000101` means that synchronous work and lower-priority transition work are
+both waiting. A bitmask expresses this coexistence directly, and bit operations
+make set operations cheap:
+
+```typescript
+// Union
+mergeLanes(a, b) {
+  return a | b;
+}
+
+// Difference
+removeLanes(a, b) {
+  return a & ~b;
+}
+```
+
+These operations run in O(1) time and use little memory. During rendering, React
+can quickly determine which kinds of updates remain and which should be handled
+first.
+
+<SectionHeading title="2. Which Events Does React Process First?" />
+
+The Lane definitions include groups such as:
+
+```typescript
+const NoLanes: Lanes = /*         */ 0b0000000000000000000000000000000
+const NoLane: Lane = /*           */ 0b0000000000000000000000000000000
+
+const SyncLane: Lane = /*         */ 0b0000000000000000000000000000010
+const InputContinuousLane: Lane =    0b0000000000000000000000000001000
+const DefaultLane: Lane = /*      */ 0b0000000000000000000000000100000
+const SyncUpdateLanes: Lane = /*  */ 0b0000000000000000000000000101010
+
+const TransitionLanes: Lanes = /* */ 0b0000000011111111111111110000000
+const TransitionLane1: Lane = /*  */ 0b0000000000000000000000010000000
+// ...
+const TransitionLane16: Lane = /* */ 0b0000000010000000000000000000000
+
+const RetryLanes: Lanes = /*      */ 0b0000111100000000000000000000000
+const RetryLane1: Lane = /*       */ 0b0000000100000000000000000000000
+// ...
+const RetryLane4: Lane = /*       */ 0b0000100000000000000000000000000
+```
+
+<Figure
+  src="./images/react-lanes.png"
+  alt="Diagram of React Lane bit positions grouped by update priority and purpose."
+  caption="The reconciler holds a set of renderLanes and batches the updates assigned to those lanes."
+  width={1562}
+  height={638}
+/>
+
+The main categories are:
+
+- `SyncLane`: discrete physical interactions processed individually, such as
+  click, input, mouse down, and submit.
+- `InputContinuousLane`: continuous interactions such as drag, scroll, mouse
+  move, and wheel.
+- `DefaultLane`: other updates, including updates originating outside React,
+  such as `setTimeout` and Promise callbacks.
+- `TransitionLane`: transitions marked by the developer through
+  `startTransition()` or `useTransition()`.
+
+Event priority maps to the corresponding Lane:
+
+```typescript
+const DiscreteEventPriority = SyncLane;
+const ContinuousEventPriority = InputContinuousLane;
+const DefaultEventPriority = DefaultLane;
+const IdleEventPriority = IdleLane;
+```
+
+DOM events are then classified:
+
+```javascript
+function getEventPriority(domEventName: DOMEventName): EventPriority {
+  switch (domEventName) {
+    case 'click':
+    // …
+    case 'input':
+      return DiscreteEventPriority;
+    case 'drag':
+    // …
+    case 'wheel':
+      return ContinuousEventPriority;
+    default:
+      return DefaultEventPriority;
+  }
+}
+```
+
+<SectionHeading title="3. How Lanes Drive Scheduling" />
+
+*Step 1 — An update receives a Lane*
+
+When `setState` is called, React first determines the kind of event that caused
+the update and selects a Lane:
+
+- User input such as a click or keystroke → `SyncLane`
+- Work inside `startTransition` → `TransitionLane`
+- A Suspense retry → `RetryLane`
+- Connecting server-rendered HTML → `HydrationLane`
+
+The Lane is attached to the update like metadata and stored in the Fiber's
+update queue:
+
+```typescript
+// Conceptually
+update = {
+  payload,
+  lane: SyncLane
+}
+```
+
+Rendering has not started yet. At this point the Lane records the intention:
+what priority and behavior should this update have?
+
+*Step 2 — Scheduling chooses the Lane set to process now*
+
+React collects pending updates at the root:
+
+```typescript
+root.pendingLanes
+// Unprocessed lanes.
+// Example: 00000101 (SyncLane + TransitionLane)
+```
+
+It uses `getHighestPriorityLane(pendingLanes)` and
+`getNextLanes(root, wipLanes)` to determine what can run:
+
+```typescript
+function getHighestPriorityLane(lanes: Lanes): Lane {
+  return lanes & -lanes;
+}
+```
+
+This isolates the rightmost `1` bit—the highest-priority Lane—and establishes
+the reference point for the render. React then calculates which Lane set is
+actually available:
+
+```typescript
+function getNextLanes(root, wipLanes) {
+  let nextLanes = NoLanes;
+
+  const pendingLanes = root.pendingLanes;
+  const suspendedLanes = root.suspendedLanes;
+  const pingedLanes = root.pingedLanes;
+
+  const nonIdlePendingLanes = pendingLanes & NonIdleLanes;
+
+  const unblockedLanes =
+    nonIdlePendingLanes & ~(suspendedLanes & ~pingedLanes);
+
+  nextLanes = unblockedLanes;
+  return nextLanes;
+}
+```
+
+The result becomes `renderLanes`, the Lane set used for the current render.
+
+*Step 3 — Rendering checks whether each update belongs*
+
+As React traverses the Fiber tree, it checks whether an update's Lane is
+included in the current `renderLanes`:
+
+```typescript
+function shouldProcessUpdate(updateLane, renderLanes) {
+  return (updateLane & renderLanes) !== NoLanes;
+}
+```
+
+- Included → apply it in this render.
+- Not included → skip it and continue through the tree.
+
+Consider a single keystroke that creates two updates:
+
+- `query`: the input value must appear immediately → `SyncLane`
+- `results`: filtering and list rendering can wait → `TransitionLane`
+
+The root accumulates both:
+
+```typescript
+queryFiber.updateQueue += { payload: "r", lane: SyncLane }
+resultsFiber.updateQueue += { payload: filteredResults, lane: TransitionLane }
+
+root.pendingLanes = SyncLane | TransitionLane // 00000101
+```
+
+The scheduler chooses the highest-priority work:
+
+```typescript
+renderLanes = SyncLane
+```
+
+The query update belongs to `renderLanes`, so React applies it and commits the
+new input value quickly. The results update does not belong, so it is skipped
+for now and the previous results remain visible.
+
+If the user continues typing `re`, then `rea`, each keystroke adds urgent
+`SyncLane` work. Even if a `TransitionLane` render has started, the urgent work
+can interrupt it. The old transition result is now obsolete and can be
+discarded. From the user's perspective, input remains responsive and the
+results eventually update only for the newest query.
+
+<SectionHeading title="Summary" />
+
+Why is `setState` asynchronous, and why is its result applied on a later cycle?
+
+It is not simply a performance optimization. React treats rendering as
+**schedulable work rather than an operation that must execute immediately**.
+Early React finished each render synchronously, but as applications grew, long
+renders blocked input and dropped frames. React therefore stopped treating a
+`setState` call as an instruction to render at once and began deciding when and
+at what priority the update should be processed.
+
+The Lane model classifies updates by priority and purpose. User input can be
+urgent while filtering a large list can be deferred. Updates created by the
+same event do not all have to be handled in the same render; React can process
+the important work first.
+
+It is more accurate, then, to say that React examines the pending work and
+applies each update at the most appropriate time. Because state is not forced
+onto the screen immediately, React can interrupt, restart, or discard renders
+while preserving input responsiveness in complex interfaces.
+
+<SectionHeading title="References and Further Reading" />
+
+- [React 18: The Lane Model](https://goidle.github.io/react/in-depth-react18-lane/)
+- [NAVER D2](https://tv.naver.com/v/23652451#comment_focus)
+- [Analyzing React's Scheduler for Concurrent Mode](https://blog.naver.com/dlaxodud2388/223225971021)
+- [React Deep Dive: Intro and Bitmasking](https://goidle.github.io/react/in-depth-react-intro/#bit-masking)
+- [React v18.0](https://react.dev/blog/2022/03/29/react-v18)
+- [Stress Testing Concurrent Features in React 18](https://dawchihliou.github.io/articles/stress-testing-concurrent-features-in-react-18)

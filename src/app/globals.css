@@ -619,15 +619,15 @@ a {
 }
 
 .article-prose :where(h2) {
-  margin-top: 5.5rem;
+  margin-top: 2rem;
   font-size: clamp(1.5625rem, 3vw, 2rem);
   letter-spacing: -0.025em;
   line-height: 1.2;
 }
 
 .article-prose :where(h3) {
-  margin-top: 3.5rem;
-  font-size: clamp(1.125rem, 2vw, 1.25rem);
+  margin-top: 2rem;
+  font-size: clamp(1.3rem, 2vw, 1.5rem);
   letter-spacing: -0.015em;
   line-height: 1.3;
 }
@@ -671,6 +671,7 @@ a {
 }
 
 .article-prose pre {
+  margin-block: 0.5rem;
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 1rem;
@@ -680,12 +681,69 @@ a {
   line-height: 1.7;
 }
 
+.article-prose [data-rehype-pretty-code-figure] {
+  margin-block: 0.5rem;
+}
+
+.article-prose [data-rehype-pretty-code-figure] code span {
+  color: var(--shiki-dark);
+}
+
 .article-prose code:not(pre code) {
   border-radius: 0.35rem;
   background: var(--muted);
   padding: 0.15rem 0.35rem;
   font-family: var(--font-mono);
   font-size: 0.9em;
+}
+
+.article-video {
+  margin-block: 2rem;
+}
+
+.article-video video {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.6rem;
+  background: var(--card);
+}
+
+.article-video figcaption {
+  margin-top: 0.75rem;
+  padding-inline: 0.25rem;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.25rem;
+  letter-spacing: 0.01em;
+}
+
+.article-toggle {
+  margin-block: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--card);
+}
+
+.article-toggle summary {
+  padding: 1rem 1.25rem;
+  color: var(--foreground);
+  cursor: pointer;
+  font-weight: 550;
+}
+
+.article-toggle[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.article-toggle-content {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.article-toggle-content > :where(p, ul) {
+  margin-top: 1rem;
 }
 
 @media (min-width: 768px) {
@@ -712,7 +770,6 @@ a {
     align-items: stretch;
     gap: 2rem;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -752,7 +809,6 @@ a {
   .article-disclosure-link span {
     transition: none;
   }
-
 }
 
 @media (prefers-reduced-transparency: reduce) {

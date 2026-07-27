@@ -44,18 +44,18 @@ By observing how the team actually worked, I connected release control, experime
 <SectionHeading title="The Process" />
 
 <Columns>
-  <Column align="center">
+  <Column align="center" width={1.5}>
     <Numbering value={1} />
 
-    **Research**
+    *Identifying Problems*
 
-    Incidents<br/>Operation data<br/> Stakeholder conversations<br />Problem statement
+    Incidents<br/>Operation data<br/> Stakeholder conversations<br />Synthesis
 
   </Column>
   <Column align="center">
     <Numbering value={2} />
 
-    **Building**
+    *Building*
 
     Solution<br/>Key features<br/>System architecture
 
@@ -63,7 +63,7 @@ By observing how the team actually worked, I connected release control, experime
   <Column align="center">
     <Numbering value={3} />
 
-    **Operation**
+    *Operation*
 
     Pilot program<br/>Iterations<br/>Emerging use cases
 
@@ -71,18 +71,18 @@ By observing how the team actually worked, I connected release control, experime
   <Column align="center">
     <Numbering value={4} />
 
-    **Reflection**
+    *Reflection*
 
     Insights<br/>Key learnings
 
   </Column>
 </Columns>
 
-<SectionHeading title="Research" />
+# 01. Identifying Problems
 
 I traced recurring moments of friction back through the workflow, then tested whether they were isolated requests or symptoms of the same system.
 
-## Incidents
+<SectionHeading eyebrow="Identifying Problems" title="Incidents" />
 
 ### A. Slow shutdown
 
@@ -125,7 +125,7 @@ I traced recurring moments of friction back through the workflow, then tested wh
   height={941}
 />
 
-## Operation Data
+<SectionHeading eyebrow="Identifying Problems" title="Operation Data" />
 
 I reviewed three years of deployment history to measure how much recurring work came from experiment operations.
 
@@ -174,7 +174,10 @@ I reviewed three years of deployment history to measure how much recurring work 
   </Column>
 </Columns>
 
-## Stakeholder Conversations
+<SectionHeading
+  eyebrow="Identifying Problems"
+  title="Stakeholder Conversations"
+/>
 
 Conversations with engineers, QA, and product managers confirmed that the same workflow created different dependencies for each role.
 
@@ -186,7 +189,7 @@ Conversations with engineers, QA, and product managers confirmed that the same w
   height={941}
 />
 
-## Problem Statement
+<SectionHeading eyebrow="Identifying Problems" title="Synthesis" />
 
 The data converged on four connected system conditions.
 
@@ -264,3 +267,7 @@ The data converged on four connected system conditions.
 
   </Column>
 </Columns>
+
+# 02. Building
+
+<SectionHeading eyebrow="Building" title="Solution Overview" />
