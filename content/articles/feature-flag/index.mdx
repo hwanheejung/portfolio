@@ -14,7 +14,7 @@ related: []
 thumbnail: "./images/thumbnail.svg"
 ---
 
-<SectionHeading eyebrow="Highlights" title="Responsibilities overview" />
+<SectionHeading title="Overview" />
 
 <Columns>
   <Column>
@@ -35,10 +35,11 @@ thumbnail: "./images/thumbnail.svg"
   </Column>
 </Columns>
 
-<SectionHeading
-  eyebrow="Background"
-  title="How we released features and ran experiments"
-/>
+<SectionHeading title="Background" />
+
+Feature releases and experiments were spread across client code, deployments, internal documents, Slack conversations, and individual memory. What first looked like separate operational inconveniences was one fragmented workflow.
+
+By observing how the team actually worked, I connected release control, experiment context, and lifecycle monitoring as parts of the same system. I initiated the project and led it from problem discovery through implementation.
 
 <SectionHeading title="The Process" />
 
@@ -46,32 +47,13 @@ thumbnail: "./images/thumbnail.svg"
   <Column align="center">
     <Numbering value={1} />
 
-    **Problem**
+    **Research**
+
+    Incidents<br/>Operation data<br/> Stakeholder conversations<br />Problem statement
 
   </Column>
   <Column align="center">
     <Numbering value={2} />
-
-    **Research**
-
-    Workflow analysis <br/>Operation data review <br />Stakeholder conversations
-
-  </Column>
-  <Column align="center">
-    <Numbering value={3} />
-
-    **Synthesis**
-
-    Problem statement<br/>Goal<br/>Principles
-
-  </Column>
-</Columns>
-
-<br />
-
-<Columns>
-  <Column align="center">
-    <Numbering value={4} />
 
     **Building**
 
@@ -79,7 +61,7 @@ thumbnail: "./images/thumbnail.svg"
 
   </Column>
   <Column align="center">
-    <Numbering value={5} />
+    <Numbering value={3} />
 
     **Operation**
 
@@ -87,11 +69,198 @@ thumbnail: "./images/thumbnail.svg"
 
   </Column>
   <Column align="center">
-    <Numbering value={6} />
+    <Numbering value={4} />
 
     **Reflection**
 
     Insights<br/>Key learnings
+
+  </Column>
+</Columns>
+
+<SectionHeading title="Research" />
+
+I traced recurring moments of friction back through the workflow, then tested whether they were isolated requests or symptoms of the same system.
+
+## Incidents
+
+### A. Slow shutdown
+
+- _No targeted shutdown_ — Disabling one feature still required a code change, build, deployment, and verification.
+- _Unsafe rollback_ — Reverting the deployment also removed unrelated, healthy features shipped alongside it.
+
+<Figure
+  src="./images/slow-shutdown.png"
+  alt="Billie, Kit, and Bucky ship in one deployment. When Billie fails, rolling back also disables the two healthy features, while keeping the deployment requires a slower code change and redeployment."
+  caption="The team could not disable Billie independently: rollback affected every feature in the deployment, while a targeted fix kept users exposed to the error."
+  width={1672}
+  height={941}
+/>
+
+### B. Manual experiments
+
+- _Engineer-dependent QA_ — Testing another variant required database access, account changes, or help from an engineer.
+- _Deployment-bound operations_ — Rollout and variant changes repeatedly created avoidable deployments.
+- _Frequent context switching_ — Small requests interrupted engineering work and reduced focus.
+
+<Figure
+  src="./images/manual-experiments.png"
+  alt="A reconstructed Slack conversation where QA repeatedly asks an engineer to switch experiment variants and a product manager requests a rollout increase that requires another deployment."
+  caption="Reconstructed from recurring team requests. Routine QA and rollout changes depended on engineers modifying assignments, code, and deployments."
+  width={1672}
+  height={941}
+/>
+
+### C. Missed checkpoints
+
+- _Delayed validation_ — Instrumentation checks happened only when an engineer remembered them.
+- _Reactive analysis_ — Results were prepared after someone requested them, sometimes too late for a meeting.
+- _Lost context_ — Each analysis required the team to reconstruct decisions scattered across memory and documents.
+
+<Figure
+  src="./images/missed-checkpoints.png"
+  alt="Expected and actual experiment timelines. After launch, manual checkpoints depend on memory, causing logs to be checked late, the experiment to be delayed, and results to be unavailable for a meeting."
+  caption="Example lifecycle. After launch, no system trigger prompted instrumentation validation or analysis preparation, so missed checkpoints surfaced only after they had already caused delays."
+  width={1672}
+  height={941}
+/>
+
+## Operation Data
+
+I reviewed three years of deployment history to measure how much recurring work came from experiment operations.
+
+<Columns>
+  <Column width={1}>
+
+    - *5 deployments/day*, with 3–4 PRs in each deployment.
+    - A 5–14 day experiment required *2–3 operation deployments*.
+    - QA and experiment operations were largely owned by engineers.
+
+  </Column>
+  <Column width={1.5}>
+    <Chart
+      ariaLabel="Illustrative monthly line chart comparing all deployments and experiment-related deployments from August 2023 to July 2026."
+      caption="Deployment analysis over the past three years."
+      series={[
+        {
+          label: "All",
+          color: "foreground",
+          values: [
+            92, 101, 98, 107, 112, 88, 103, 109, 105, 114, 118, 96, 108, 111,
+            116, 121, 125, 99, 114, 119, 117, 128, 132, 106, 120, 124, 129, 134,
+            138, 111, 126, 131, 128, 136, 140, 118,
+          ],
+        },
+        {
+          label: "Experiment",
+          color: "accent",
+          values: [
+            7, 9, 8, 11, 13, 6, 10, 12, 9, 14, 16, 8, 12, 13, 15, 18, 17, 9, 14,
+            16, 15, 19, 21, 11, 16, 18, 20, 22, 23, 12, 18, 20, 19, 22, 24, 14,
+          ],
+        },
+      ]}
+      xTicks={[
+        { index: 0, label: "Aug ’23" },
+        { index: 5, label: "Jan ’24" },
+        { index: 11, label: "Jul ’24" },
+        { index: 17, label: "Jan ’25" },
+        { index: 23, label: "Jul ’25" },
+        { index: 29, label: "Jan ’26" },
+        { index: 35, label: "Jul ’26" },
+      ]}
+      yMax={150}
+    />
+  </Column>
+</Columns>
+
+## Stakeholder Conversations
+
+Conversations with engineers, QA, and product managers confirmed that the same workflow created different dependencies for each role.
+
+<Figure
+  src="./images/stakeholder-conversations.png"
+  alt="An affinity map of paraphrased and anonymized conversation notes from engineers, QA, and product managers, loosely grouped into release control, testing and assignment, and monitoring and context."
+  caption="Paraphrased and anonymized notes from stakeholder conversations. Repeated observations across roles helped confirm that the incidents were shared workflow problems rather than isolated inconveniences."
+  width={1672}
+  height={941}
+/>
+
+## Problem Statement
+
+The data converged on four connected system conditions.
+
+1. _Code-bound control_  
+   Deployment and release were treated as the same operation.
+2. _Engineering dependency_  
+   Routine experiment operations required developer intervention.
+3. _Unstable assignment_  
+   Configuration changes could alter an existing user's experience.
+4. _Memory-based operation_  
+   Monitoring progressed only when someone remembered the next step.
+
+> The team could ship experiments, but could not reliably control, preserve, and
+> monitor them across their lifecycle.
+
+<Columns gap="wide">
+  <Column width={1.5}>
+    ### Goals
+
+    <PointGrid
+      tone="accent"
+      variant="feature"
+      items={[
+        {
+          title: "Independent control",
+          description:
+            "Change state, scope, or rollout without another deployment.",
+        },
+        {
+          title: "Consistent experiences",
+          description:
+            "Preserve assignments and make configuration impact explicit.",
+        },
+        {
+          title: "Structured intent",
+          description:
+            "Keep hypotheses, segments, timing, and analysis questions together.",
+        },
+        {
+          title: "Proactive monitoring",
+          description: "Report progress before the team has to request it.",
+        },
+      ]}
+    />
+
+  </Column>
+  <Column width={1}>
+    ### Principles
+
+    <PointGrid
+      variant="list"
+      items={[
+        {
+          title: "Scoped",
+          description: "Make affected users and systems clear.",
+        },
+        {
+          title: "Reversible",
+          description: "Undo risky changes immediately.",
+        },
+        {
+          title: "Consistent",
+          description: "Preserve existing experiences where possible.",
+        },
+        {
+          title: "Proactive, not autonomous",
+          description: "Surface the next action without replacing judgment.",
+        },
+        {
+          title: "Explainable",
+          description: "Expose uncertainty and missing data.",
+        },
+      ]}
+    />
 
   </Column>
 </Columns>
