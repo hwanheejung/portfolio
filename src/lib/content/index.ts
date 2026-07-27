@@ -27,11 +27,13 @@ const ABOUT_ROOT = path.join(CONTENT_ROOT, "about");
 
 const ALLOWED_MDX_COMPONENTS = new Set([
   "Callout",
+  "Chart",
   "Column",
   "Columns",
   "Figure",
   "Metric",
   "Numbering",
+  "PointGrid",
   "SectionHeading",
 ]);
 

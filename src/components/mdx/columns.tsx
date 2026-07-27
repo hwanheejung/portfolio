@@ -10,6 +10,7 @@ import { cn } from "@/shared/lib/cn";
 
 type Props = {
   children: ReactNode;
+  gap?: "default" | "wide";
 };
 
 type ColumnProps = {
@@ -18,7 +19,7 @@ type ColumnProps = {
   width?: number;
 };
 
-const Columns = ({ children }: Props) => {
+const Columns = ({ children, gap = "default" }: Props) => {
   const columns = Children.toArray(children).filter(
     isValidElement
   ) as ReactElement<ColumnProps>[];
@@ -38,7 +39,10 @@ const Columns = ({ children }: Props) => {
 
   return (
     <div
-      className="my-1 grid grid-cols-1 gap-3 md:grid-cols-(--mdx-column-template) md:gap-4"
+      className={cn(
+        "my-4 grid grid-cols-1 gap-8 md:grid-cols-(--mdx-column-template)",
+        gap === "wide" ? "md:gap-12" : "md:gap-4",
+      )}
       data-column-count={count}
       style={{ "--mdx-column-template": template } as CSSProperties}
     >

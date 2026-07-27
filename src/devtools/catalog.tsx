@@ -1,10 +1,12 @@
 import type { ComponentProps, ReactNode } from "react";
 
 import { Callout } from "@/components/mdx/callout";
+import { Chart } from "@/components/mdx/chart";
 import { Column, Columns } from "@/components/mdx/columns";
 import { Figure } from "@/components/mdx/figure";
 import { Metric } from "@/components/mdx/metric";
 import { Numbering } from "@/components/mdx/numbering";
+import { PointGrid } from "@/components/mdx/point-grid";
 import { SectionHeading } from "@/components/mdx/section-heading";
 
 type CalloutBackground = NonNullable<
@@ -143,6 +145,16 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
           { label: "Center", value: "center" },
         ],
       },
+      {
+        key: "gap",
+        label: "Column gap",
+        type: "select",
+        initialValue: "default",
+        options: [
+          { label: "Default", value: "default" },
+          { label: "Wide", value: "wide" },
+        ],
+      },
       ...Array.from({ length: 6 }, (_, index): DevtoolField => ({
         key: `width${index + 1}`,
         label: `Column ${index + 1} width`,
@@ -155,6 +167,7 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
     ],
     createSnippet: (values) => {
       const count = Math.min(6, Math.max(2, Number(values.count) || 2));
+      const gapProp = values.gap === "wide" ? ' gap="wide"' : "";
       const columns = Array.from(
         { length: count },
         (_, index) => {
@@ -172,13 +185,13 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
         },
       );
 
-      return `<Columns>\n${columns.join("\n\n")}\n</Columns>`;
+      return `<Columns${gapProp}>\n${columns.join("\n\n")}\n</Columns>`;
     },
     renderPreview: (values) => {
       const count = Math.min(6, Math.max(2, Number(values.count) || 2));
 
       return (
-        <Columns>
+        <Columns gap={values.gap === "wide" ? "wide" : "default"}>
           {Array.from({ length: count }, (_, index) => (
             <Column
               align={values.align === "center" ? "center" : "start"}
@@ -212,6 +225,77 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
       `<Numbering value={${Math.max(0, Number(values.value) || 1)}} />`,
     renderPreview: (values) => (
       <Numbering value={Math.max(0, Number(values.value) || 1)} />
+    ),
+  },
+  {
+    name: "PointGrid",
+    description:
+      "Turn a short set of findings, goals, or principles into a scannable grid.",
+    fields: [
+      {
+        key: "columns",
+        label: "Columns",
+        type: "select",
+        initialValue: "2",
+        options: [
+          { label: "2 columns", value: "2" },
+          { label: "3 columns", value: "3" },
+        ],
+      },
+      {
+        key: "tone",
+        label: "Marker",
+        type: "select",
+        initialValue: "default",
+        options: [
+          { label: "Default", value: "default" },
+          { label: "Accent", value: "accent" },
+        ],
+      },
+      {
+        key: "variant",
+        label: "Layout",
+        type: "select",
+        initialValue: "default",
+        options: [
+          { label: "Default grid", value: "default" },
+          { label: "Feature grid", value: "feature" },
+          { label: "Compact list", value: "list" },
+        ],
+      },
+    ],
+    createSnippet: (values) =>
+      `<PointGrid\n  columns={${values.columns === "3" ? 3 : 2}}\n  variant=${quote(
+        values.variant === "feature"
+          ? "feature"
+          : values.variant === "list"
+            ? "list"
+            : "default",
+      )}\n  tone=${quote(
+        values.tone === "accent" ? "accent" : "default",
+      )}\n  items={[\n    { title: "First point", description: "One concise explanation." },\n    { title: "Second point", description: "One concise explanation." },\n  ]}\n/>`,
+    renderPreview: (values) => (
+      <PointGrid
+        columns={values.columns === "3" ? 3 : 2}
+        items={[
+          {
+            title: "First point",
+            description: "One concise explanation.",
+          },
+          {
+            title: "Second point",
+            description: "One concise explanation.",
+          },
+        ]}
+        tone={values.tone === "accent" ? "accent" : "default"}
+        variant={
+          values.variant === "feature"
+            ? "feature"
+            : values.variant === "list"
+              ? "list"
+              : "default"
+        }
+      />
     ),
   },
   {
@@ -302,6 +386,36 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
         }
         suffix={values.suffix?.trim() || undefined}
         value={values.value?.trim() || "—"}
+      />
+    ),
+  },
+  {
+    name: "Chart",
+    description: "Render a minimal, reusable multi-series line chart.",
+    fields: [],
+    createSnippet: () =>
+      `<Chart\n  ariaLabel="Monthly values"\n  caption="Data source or time range"\n  series={[\n    { label: "All", values: [92, 101, 98], color: "foreground" },\n    { label: "Experiment", values: [7, 9, 8], color: "accent" },\n  ]}\n  xTicks={[\n    { index: 0, label: "Jan" },\n    { index: 2, label: "Mar" },\n  ]}\n  yMax={120}\n/>`,
+    renderPreview: () => (
+      <Chart
+        ariaLabel="Example monthly values"
+        caption="Example data"
+        series={[
+          {
+            color: "foreground",
+            label: "All",
+            values: [92, 101, 98],
+          },
+          {
+            color: "accent",
+            label: "Experiment",
+            values: [7, 9, 8],
+          },
+        ]}
+        xTicks={[
+          { index: 0, label: "Jan" },
+          { index: 2, label: "Mar" },
+        ]}
+        yMax={120}
       />
     ),
   },
