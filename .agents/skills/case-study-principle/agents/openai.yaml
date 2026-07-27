@@ -1,0 +1,4 @@
+interface:
+  display_name: "Case Study Principle"
+  short_description: "Shape clear, visual, scannable product case studies"
+  default_prompt: "Use $case-study-principle to review and improve this product case study."
