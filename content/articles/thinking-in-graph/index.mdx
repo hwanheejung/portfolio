@@ -1,0 +1,460 @@
+---
+title: Thinking in Graph
+description: Moving beyond a REST-shaped GraphQL API toward node-based schemas, single-query patterns, and field-level resolver chains.
+slug: thinking-in-graph
+date: 2024-12-07
+draft: false
+categories:
+  deep-dive:
+    - graphql
+  works: []
+spotlightIn: []
+related: []
+thumbnail: "./images/schema-after-refactor.png"
+---
+
+# 1. From a RESTful Mindset to GraphQL
+
+A few days ago, I came across an interview with Lenz, a maintainer of Apollo
+Client. I opened it hoping to hear the story behind Suspense support in Apollo
+Client. Instead, something from the opening discussion stayed with me: the
+interviewer described how surprising GraphQL felt when it first appeared inside
+a large organization.
+
+That story is a useful place to begin.
+
+<figure className="article-video">
+  <iframe
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    allowFullScreen
+    src="https://www.youtube.com/embed/9KJcgaqa5Zs"
+    title="Interview with Apollo Client maintainer Lenz"
+  />
+  <figcaption>Interview with Lenz, an Apollo Client maintainer.</figcaption>
+</figure>
+
+The interviewer first encountered GraphQL around 2015 while working at IBM.
+Across the company, many teams owned different sets of data, and their systems
+communicated through REST APIs. The arrangement sounds straightforward, but at
+that scale it created a surprising number of problems.
+
+<SectionHeading title="1.1. Where REST APIs Struggle at Scale" />
+
+_1. Inconsistent contracts_
+
+Each team created its own endpoints and returned data shaped around individual
+requests. There was no strong guarantee that separate teams would expose data
+consistently or use compatible response formats. Consumers ended up writing
+substantial amounts of code to normalize and combine those responses.
+
+_2. No single source of truth_
+
+As teams added more request-specific endpoints, the same data appeared in
+several places. Without a reliable source of truth, teams had to keep talking to
+one another simply to track changes elsewhere in the organization.
+
+_3. Excessive coordination_
+
+Every team needed to announce data changes and create new endpoints when another
+team needed a different shape. That coordination became a serious drag on
+developer productivity.
+
+> “I think that's a really big challenge in code because codebases are too big
+> for everybody to keep full context.”
+
+_4. Endpoint sprawl_
+
+To reduce repeated conversations, teams often responded to requests by creating
+another custom endpoint:
+
+> Frontend: “We need this data.”
+
+The result was more duplication, more endpoint-specific logic, and an API that
+became increasingly difficult to keep consistent.
+
+<SectionHeading title="1.2. What GraphQL Changed" />
+
+GraphQL approached the problem differently: define the required data explicitly
+and fetch only that data. Unlike a REST API, where the server fixes the shape of
+each endpoint, GraphQL lets the client describe the shape of the response.
+
+```graphql
+query GetUser {
+  user(id: "123") {
+    name
+    email
+    posts {
+      title
+    }
+  }
+}
+```
+
+Even someone seeing GraphQL for the first time can read this query and infer
+that the client needs a user's name, email, and post titles. There is no reason
+to fetch unrelated fields or add another endpoint just for this view.
+
+<SectionHeading title="1.3. The Practical Advantages" />
+
+_1. Flexible data requests_
+
+REST endpoints return a predefined response. GraphQL clients can select the
+fields they need for each use case.
+
+_2. Schema-driven design_
+
+A GraphQL schema makes the API's data structures and relationships explicit.
+Teams only need to share the relevant contract. A team that owns user data, for
+example, can expose that a `User` has an `id` without revealing its internal
+implementation. The schema itself gives clients enough information to explore
+the data model without maintaining a separate, always-outdated API guide.
+
+_3. Field-level usage analysis_
+
+Because GraphQL records requests at the field level, a team can see which fields
+are frequently used. If an expensive field has no consumers, deprecating it
+becomes a much safer decision.
+
+_4. Predictable caching and data integrity_
+
+Explicit response shapes also make client-side caching easier. Apollo Client,
+for example, can normalize entities and remove duplicate data automatically.
+
+A REST mutation can return updated data too, but clients often issue a separate
+refetch to restore confidence that local state is current. GraphQL mutations are
+commonly designed to return the changed entity, allowing the client to merge
+that result directly into its normalized cache.
+
+# 2. I Had Been Using GraphQL Like REST
+
+<SectionHeading title="2.1. Naming Things Like a Graph" />
+
+As I worked with GraphQL, I realized that I had never fully left the RESTful
+mindset behind. It showed most clearly in the names and structure of my schema.
+The difference became obvious during a refactor.
+
+<Columns>
+  <Column>
+    <Figure
+      src="./images/queries-before-refactor.png"
+      alt="A list of GraphQL queries before the refactor, using REST-like get-prefixed names."
+      caption="Before: queries were named like endpoint operations."
+      width={542}
+      height={843}
+    />
+  </Column>
+  <Column>
+    <Figure
+      src="./images/schema-before-refactor.png"
+      alt="GraphQL query fields before the refactor, including getAlbum and getSavedAlbums."
+      caption="The schema emphasized fetching operations rather than graph nodes."
+      width={1142}
+      height={214}
+    />
+  </Column>
+</Columns>
+
+Names such as `getAlbum` and `getAlbumTracks` read like REST endpoint names.
+They describe an operation—_get this resource_—and focus attention on the act of
+fetching.
+
+GraphQL, however, is built around a graph. A graph consists of nodes and edges.
+Nodes represent entities such as `Album` and `Track`; edges represent the
+relationships between them, such as `Album → Tracks`.
+
+Schema design should reflect that model. Instead of asking “What should I
+fetch?”, the better question is _Which nodes and relationships should the client
+be able to traverse?_
+
+<Figure
+  src="./images/schema-after-refactor.png"
+  alt="GraphQL query fields after the refactor, renamed from getAlbum and getSavedAlbums to album and savedAlbums."
+  caption="After: album and savedAlbums describe entry points into the graph."
+  width={1142}
+  height={178}
+/>
+
+I renamed `getAlbum` and `getSavedAlbums` to `album` and `savedAlbums`. The new
+names describe nodes rather than commands.
+
+A GraphQL query does not merely retrieve data. It traverses relationships:
+
+```graphql
+query {
+  album(albumId: "123") {
+    title
+    release_date
+    tracks {
+      title
+      duration
+      artist {
+        name
+      }
+    }
+  }
+}
+```
+
+This query begins at an `album` node and follows the graph through its tracks to
+each track's artist. The relationships are visible directly in the shape of the
+query.
+
+With a RESTful approach, the same traversal could require several endpoint
+calls:
+
+```text
+GET /albums/123
+GET /albums/123/tracks
+GET /artists/:artistId
+```
+
+<SectionHeading title="2.2. The Single Query Pattern" />
+
+It is worth checking whether a schema exposes several queries for the same node
+type:
+
+```graphql
+type Query {
+  getUserById(userId: String!): User
+  getUserByName(userName: String!): User
+}
+```
+
+Here, the schema defines two query fields for the same `User` node: one lookup
+by ID and another by name. This is a common way to reproduce REST endpoint
+design inside GraphQL.
+
+It creates three problems:
+
+1. The schema is organized around operations rather than nodes.
+2. Each additional query can duplicate resolver logic on the server.
+3. Every new lookup condition requires yet another query field.
+
+A single query with filter arguments is more flexible:
+
+```graphql
+type Query {
+  user(id: String, name: String): User
+}
+```
+
+The schema now has one entry point for the `User` node. New lookup conditions
+can be added as arguments instead of creating a growing list of operation-like
+queries.
+
+```graphql
+# Look up by ID
+query {
+  user(id: "123") {
+    name
+    email
+  }
+}
+
+# Look up by name
+query {
+  user(name: "Alice") {
+    id
+    email
+  }
+}
+```
+
+Where REST might expose both `GET /users/:id` and
+`GET /users?name=Alice`, GraphQL can handle both requests through the same
+`user` field.
+
+# 3. GraphQL Data Is a Graph
+
+<SectionHeading title="Resolver Chaining and Field-Based Design" />
+
+Resolver chaining means that resolvers work as a connected sequence: the result
+of one resolver becomes the parent input of another. A `player` resolver can
+return `currentTrack`, and the resolver for `CurrentTrack` can supply `lyrics`
+only when the client asks for that field.
+
+```graphql
+type Query {
+  player: PlayerState
+}
+
+type PlayerState {
+  currentTrack: CurrentTrack
+  queue: [PlayerTrack]!
+}
+
+type CurrentTrack {
+  id: String
+  name: String
+  album: PlayerAlbum
+  artists: [PlayerArtist]
+  duration_ms: Int
+  lyrics: Lyrics
+}
+
+type Lyrics {
+  id: String
+  plainLyrics: String
+  syncedLyrics: String
+}
+```
+
+<SectionHeading title="How the Resolver Chain Works" />
+
+_1. Resolve the player query_
+
+The `player` resolver requests the currently playing track and queue from the
+Spotify API, maps the response into `PlayerState`, and returns `currentTrack` as
+a `CurrentTrack`.
+
+```typescript
+const playerResolvers = {
+  Query: {
+    player: async (_: unknown, __: unknown, context: MyContext) => {
+      const data = await context.spotifyAxios.get(`/me/player/queue`);
+      return {
+        currentTrack: mapTrack(data.currently_playing),
+        queue: (data.queue || []).map(mapTrack),
+      };
+    },
+  },
+};
+```
+
+_2. Resolve the lyrics field_
+
+The returned `currentTrack` becomes the parent value for the `CurrentTrack`
+resolver. If the query includes `lyrics`, that field resolver fetches the lyric
+data and returns a `Lyrics` value.
+
+```typescript
+const playerResolvers = {
+  CurrentTrack: {
+    lyrics: async (parent: CurrentTrack) => {
+      const lyricsParams = {
+        // Build request parameters from parent.
+      };
+      const lyricsResponse = await lyricsAxios.get("/get", {
+        params: lyricsParams,
+      });
+      return {
+        id: lyricsResponse.id || null,
+        plainLyrics: lyricsResponse.plainLyrics || "",
+        syncedLyrics: lyricsResponse.syncedLyrics || "",
+      };
+    },
+  },
+};
+```
+
+Each field can have an independent resolver, and GraphQL executes the work
+needed for the fields selected by the client.
+
+<SectionHeading title="Why Field-Level Resolvers Help" />
+
+_1. Unrequested data requires no work_
+
+GraphQL invokes field resolvers according to the client's selection set. If the
+client does not request `lyrics`, the `CurrentTrack.lyrics` resolver does not
+run. That avoids unnecessary resource usage.
+
+_2. Requests remain flexible_
+
+Clients can omit `lyrics` when a screen does not need it, reducing both server
+work and network payload size.
+
+_3. Resolver ownership stays local_
+
+Each field is managed independently. Changing the implementation of one field
+does not require rewriting unrelated resolvers, which improves maintainability
+and makes the schema easier to extend.
+
+_4. Relationships are visible_
+
+The path `player → currentTrack → lyrics` makes the relationship between the
+data explicit in both the schema and the query. That is GraphQL's graph-based
+model in practice.
+
+# 4. A Mid-Project Reflection
+
+<SectionHeading title="4.1. What I Am Still Working Through" />
+
+My project does not contain enough data yet for GraphQL's advantages to feel
+dramatic. I have experimented with resolver chaining, field-based design, and
+other GraphQL concepts, but their impact is still difficult to measure. That
+may partly reflect gaps in my own understanding.
+
+The ideal path for adopting a technique would look like this:
+
+1. The application is slow.
+2. Investigation shows that it requests unnecessary data.
+3. I separate the work through resolver chaining.
+4. The unnecessary requests disappear and performance improves.
+
+My actual path has been closer to this:
+
+1. I want to use GraphQL effectively.
+2. I discover resolver chaining.
+3. I look for somewhere to apply it.
+4. I implement it, but cannot yet feel a meaningful difference.
+
+That second path starts with a technology rather than a problem. Recognizing
+that difference made me realize that I still have work to do before I can use
+GraphQL with real depth.
+
+<SectionHeading title="4.2. GraphQL Becomes More Valuable as Systems Grow" />
+
+GraphQL is not simply a replacement for an API style. _It is a design philosophy
+centered on exploring data and expressing relationships._ Its value grows with
+the size of a project and the complexity of its data.
+
+My current project has a relatively small and simple data model. GraphQL's
+advantages would be easier to see in a system where:
+
+- several teams independently own parts of the same data graph,
+- relationships between entities are complex,
+- clients query the same nodes through many combinations of conditions, or
+- large requests make caching and performance optimization important.
+
+A toy project gives me room to learn these ideas, but not always enough
+pressure to prove why they matter.
+
+<SectionHeading title="4.3. Where I Want to Go Next" />
+
+_1. Use GraphQL to solve problems_
+
+I want to begin with an observed problem rather than stopping at the act of
+adopting a tool:
+
+- Repeated field selections → introduce fragments.
+- Several teams own different parts of one graph → explore Federation so each
+  team can work independently.
+
+_2. Build a TypeScript integration that fits the project_
+
+I am still considering how GraphQL and TypeScript should work together. Custom
+hooks do not fit every React Server Components use case, while GraphQL Code
+Generator may provide a better foundation. I want to examine the tradeoffs
+carefully and develop a repeatable practice of my own.
+
+_3. Experience GraphQL in large-scale collaboration_
+
+I would like to experience the problems GraphQL was designed to address:
+
+- letting teams own data independently and composing it through Federation,
+- collaborating on schema design and integration, and
+- designing caching strategies for complex, high-volume data.
+
+# 5. Closing Thoughts
+
+GraphQL feels less like a mechanism for sending requests and receiving responses
+than a philosophy for exploring data and designing relationships. Its benefits
+will naturally feel different depending on the scale and complexity of the
+system around it.
+
+Over the last few days, I have spent a great deal of energy trying to use
+GraphQL well inside a small project. Not every feature produces a visible
+payoff yet. Even so, learning to see data as nodes and relationships feels
+valuable in its own right. Each attempt to understand that design philosophy is
+practice for the larger systems—and larger teams—where those choices carry much
+more weight.

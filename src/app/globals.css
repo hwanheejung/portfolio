@@ -701,13 +701,17 @@ a {
   margin-block: 2rem;
 }
 
-.article-video video {
+.article-video :where(video, iframe) {
   display: block;
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 1.6rem;
   background: var(--card);
+}
+
+.article-video iframe {
+  aspect-ratio: 16 / 9;
 }
 
 .article-video figcaption {
