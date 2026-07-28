@@ -1,9 +1,13 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ArticleCard } from "@/components/article/article-card";
 import { ArticleMeta } from "@/components/article/article-meta";
+import { ArticleToc } from "@/components/article/article-toc";
 import { getDisplayTags } from "@/components/article/get-display-tags";
 import { GridView } from "@/components/collection/grid-view";
 import {
@@ -16,6 +20,7 @@ import {
   getTaxonomy,
   resolveArticleSlugs,
 } from "@/lib/content";
+import { extractArticleToc } from "@/lib/content/toc";
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -65,9 +70,19 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     import(`../../../../content/articles/${slug}/index.mdx`),
     resolveArticleSlugs(article.related),
   ]);
+  const articleSource = await readFile(
+    path.join(process.cwd(), "content", "articles", slug, "index.mdx"),
+    "utf8"
+  );
+  const articleBody = articleSource.replace(
+    /^---\r?\n[\s\S]*?\r?\n---\r?\n?/,
+    ""
+  );
+  const tocItems = extractArticleToc(articleBody);
 
   return (
     <article className="page-shell">
+      <ArticleToc items={tocItems} />
       <header className="mx-auto flex max-w-4xl flex-col items-center border-b border-border py-16 md:py-24">
         <Link
           className="mr-auto text-sm text-muted-foreground"

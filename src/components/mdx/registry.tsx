@@ -12,6 +12,7 @@ import { PointGrid } from "./point-grid";
 import { Quote } from "./quote";
 import { SectionHeading } from "./section-heading";
 import { WhiteText } from "./white-text";
+import { createHeadingId } from "@/lib/content/toc";
 
 type FigureProps = ComponentProps<typeof Figure>;
 type Props = {
@@ -35,6 +36,21 @@ const baseMdxComponents: MDXComponents = {
 const createArticleMdxComponents = (slug: string): MDXComponents => {
   return {
     ...baseMdxComponents,
+    h1: ({ children, ...props }: ComponentProps<"h1">) => (
+      <h1 id={createHeadingId(String(children))} {...props}>
+        {children}
+      </h1>
+    ),
+    h2: ({ children, ...props }: ComponentProps<"h2">) => (
+      <h2 id={createHeadingId(String(children))} {...props}>
+        {children}
+      </h2>
+    ),
+    h3: ({ children, ...props }: ComponentProps<"h3">) => (
+      <h3 id={createHeadingId(String(children))} {...props}>
+        {children}
+      </h3>
+    ),
     Figure: (props: FigureProps) => (
       <Figure {...props} src={resolveArticleAsset(slug, props.src)} />
     ),

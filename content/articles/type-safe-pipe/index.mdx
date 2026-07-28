@@ -10,37 +10,37 @@ categories:
     - functional-programming
   works: []
 spotlightIn: []
-related: []
+related: ["type-safe-curry"]
 thumbnail: "./images/fp-ts-pipe-overloads.png"
 ---
 
 # 1. Introducing pipe
 
 After building a curry utility, I wanted to build pipe. A pipe function runs
-several functions *sequentially from left to right*. That makes a transformation
+several functions _sequentially from left to right_. That makes a transformation
 flow visible in the code and fits naturally with declarative programming.
 
-~~~javascript
+```javascript
 const add = (value) => value + 1;
 const multiply = (value) => value * 2;
 const subtract = (value) => value - 3;
 
 const result = subtract(multiply(add(5)));
 console.log(result); // 9
-~~~
+```
 
 The result of add becomes the input to multiply, and then to subtract. The flow
 is correct, but it has to be read from the inside out.
 
 With pipe, the same work reads in execution order:
 
-~~~javascript
+```javascript
 const processValue = pipe(add, multiply, subtract);
 console.log(processValue(5)); // 9
-~~~
+```
 
-The sequence *add → multiply → subtract* is visible at a glance. Rather than
-describing *how* to nest calls, the code describes *what* transformations make
+The sequence _add → multiply → subtract_ is visible at a glance. Rather than
+describing _how_ to nest calls, the code describes _what_ transformations make
 up the operation.
 
 # 2. Two Shapes for pipe
@@ -49,25 +49,25 @@ up the operation.
 
 Pipe utilities usually take one of two forms:
 
-~~~typescript
+```typescript
 pipe(value, fn1, fn2, ...);
 pipe(fn1, fn2, ...)(value);
-~~~
+```
 
-The first is an *immediate-execution style*, used by
+The first is an _immediate-execution style_, used by
 [fp-ts](https://gcanti.github.io/fp-ts/modules/function.ts.html#pipe). Because
 the value is supplied first, calling pipe evaluates the chain immediately.
 
-The second is a *curried style*, used by libraries such as
+The second is a _curried style_, used by libraries such as
 [Ramda](https://ramdajs.com/docs/#pipeWith):
 
-~~~javascript
+```javascript
 const processValue = pipe(add, multiply, subtract);
 const result = processValue(5);
-~~~
+```
 
 Here, pipe returns a new function. Defining transformations before supplying
-data makes *function composition itself* the first-class operation. This is the
+data makes _function composition itself_ the first-class operation. This is the
 form I chose to implement.
 
 # 3. Type-Safe Composition in TypeScript
@@ -76,8 +76,8 @@ form I chose to implement.
 
 A typed pipe needs to guarantee two things:
 
-- *Each function's return type matches the next function's input type.*
-- *The pipe's final return type is the return type of its last function.*
+- _Each function's return type matches the next function's input type._
+- _The pipe's final return type is the return type of its last function._
 
 Given (arg: X) => Y, (arg: Y) => Z, and (arg: Z) => K, the argument of function
 n + 1 must be the return type of function n.
@@ -88,7 +88,7 @@ My first thought was to describe the whole chain recursively. The article
 [How to use advanced TypeScript to define a pipe function](https://dev.to/ecyrbe/how-to-use-advanced-typescript-to-define-a-pipe-function-381h)
 takes this approach:
 
-~~~typescript
+```typescript
 type AnyFunc = (...args: any[]) => any;
 
 type PipeArgs<F extends AnyFunc[], Acc extends AnyFunc[] = []> = F extends [
@@ -96,13 +96,13 @@ type PipeArgs<F extends AnyFunc[], Acc extends AnyFunc[] = []> = F extends [
 ]
   ? [...Acc, (...args: A) => B]
   : F extends [(...args: infer A) => any, ...infer Tail]
-    ? Tail extends [(arg: infer B) => any, ...any[]]
-      ? PipeArgs<Tail, [...Acc, (...args: A) => B]>
-      : Acc
-    : Acc;
-~~~
+  ? Tail extends [(arg: infer B) => any, ...any[]]
+    ? PipeArgs<Tail, [...Acc, (...args: A) => B]>
+    : Acc
+  : Acc;
+```
 
-Its advantage is clear: *a pipe can accept an unlimited number of functions*.
+Its advantage is clear: _a pipe can accept an unlimited number of functions_.
 But that flexibility comes with a more complicated type system and can slow type
 checking as chains grow.
 
@@ -111,11 +111,11 @@ checking as chains grow.
 A pipe with ten or more functions is rarely easier to understand. Long chains
 are often better expressed as meaningful intermediate steps:
 
-~~~typescript
+```typescript
 const step1 = pipe(func1, func2, func3);
 const step2 = pipe(func4, func5, func6);
 const finalStep = pipe(step1, step2, func7, func8);
-~~~
+```
 
 Breaking a long sequence apart gives transformations names and makes the logic
 easier to inspect. It also avoids asking the TypeScript checker to recursively
@@ -126,25 +126,22 @@ follow an arbitrarily long chain.
 Function overloading gives one function several call signatures—each with its
 own parameter and return types—while keeping one runtime implementation:
 
-~~~typescript
+```typescript
 function example(value: number): number;
 function example(value: string): string;
 
 function example(value: number | string): number | string {
   return typeof value === "number" ? value * 2 : value.toUpperCase();
 }
-~~~
+```
 
 The same technique is a good fit for pipe. Each overload describes one allowed
 chain length and ensures that adjacent functions connect correctly:
 
-~~~typescript
+```typescript
 export function pipe<A, B>(ab: (a: A) => B): (a: A) => B;
 
-export function pipe<A, B, C>(
-  ab: (a: A) => B,
-  bc: (b: B) => C
-): (a: A) => C;
+export function pipe<A, B, C>(ab: (a: A) => B, bc: (b: B) => C): (a: A) => C;
 
 export function pipe<A, B, C, D>(
   ab: (a: A) => B,
@@ -156,10 +153,9 @@ export function pipe(
   firstFn: (value: unknown) => unknown,
   ...fns: Array<(value: unknown) => unknown>
 ) {
-  return (arg: unknown) =>
-    fns.reduce((value, fn) => fn(value), firstFn(arg));
+  return (arg: unknown) => fns.reduce((value, fn) => fn(value), firstFn(arg));
 }
-~~~
+```
 
 In practice, I would continue the overload signatures to a sensible maximum,
 such as ten functions. That gives the editor precise inference and clear error
@@ -170,14 +166,14 @@ messages without introducing a deeply recursive type.
 I started by considering a recursive type system that would support unlimited
 function chains. But three constraints mattered more:
 
-- *The types become difficult to understand.*
-- *Compile-time performance can deteriorate.*
-- *Pipes longer than ten functions are uncommon and often deserve to be split.*
+- _The types become difficult to understand._
+- _Compile-time performance can deteriorate._
+- _Pipes longer than ten functions are uncommon and often deserve to be split._
 
 For this utility, overloads are the better engineering tradeoff. They are
 explicit, fast, easy to maintain, and still cover the practical cases.
 
-Sometimes *the less clever solution is the more useful one*. TypeScript's type
+Sometimes _the less clever solution is the more useful one_. TypeScript's type
 system is powerful, but code should still be guided by the readability and
 usage patterns that people actually encounter.
 

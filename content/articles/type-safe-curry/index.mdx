@@ -10,16 +10,16 @@ categories:
     - functional-programming
   works: []
 spotlightIn: []
-related: []
+related: ["type-safe-pipe"]
 thumbnail: "./images/rambda-curry-source.png"
 ---
 
 # 0. Functional Programming and Currying
 
-While studying functional programming, I came across *currying*. At first, it
+While studying functional programming, I came across _currying_. At first, it
 looked like little more than a technique for breaking a complex function into
 smaller ones. The further I followed it, however, the more it seemed to capture
-*several ideas at the heart of functional programming*.
+_several ideas at the heart of functional programming_.
 
 <SectionHeading title="The Principles Behind Functional Programming" />
 
@@ -32,13 +32,13 @@ Functional programming tends to emphasize:
 - composition and modularity, and
 - higher levels of abstraction.
 
-Together, these principles model a program as *a flow of data and
-transformations*.
+Together, these principles model a program as _a flow of data and
+transformations_.
 
 <SectionHeading title="What Is Currying?" />
 
-Currying transforms *a function of N arguments into a sequence of N functions,
-each accepting one argument*. The name comes from the mathematician Haskell
+Currying transforms _a function of N arguments into a sequence of N functions,
+each accepting one argument_. The name comes from the mathematician Haskell
 Curry.
 
 ```typescript
@@ -56,10 +56,10 @@ another function, and lets that function receive `b`.
 
 <SectionHeading title="Why Currying Fits Functional Programming" />
 
-*Functions become values*
+_Functions become values_
 
-A curried function returns another function, making *first-class functions
-visible in everyday code*:
+A curried function returns another function, making _first-class functions
+visible in everyday code_:
 
 ```typescript
 const multiply = (a: number) => (b: number) => a * b;
@@ -70,14 +70,14 @@ double(5); // 10
 
 `double` is a reusable value produced from a more general function.
 
-*Immutability and pure functions remain natural*
+_Immutability and pure functions remain natural_
 
-Partial application *creates a new function without modifying the original one*.
+Partial application _creates a new function without modifying the original one_.
 Each step returns a value rather than mutating external state.
 
-*Composition and reuse become easier*
+_Composition and reuse become easier_
 
-Currying produces *unary functions that fit naturally into composition*:
+Currying produces _unary functions that fit naturally into composition_:
 
 ```typescript
 const curry = (fn: Function) => (a: unknown) => (b: unknown) => fn(a, b);
@@ -92,7 +92,7 @@ const add3 = curriedAdd(3);
 `add3` fixes one argument of `add`, producing a smaller function with a clearer
 purpose.
 
-*General operations can become specific tools*
+_General operations can become specific tools_
 
 ```typescript
 const filterBy =
@@ -108,7 +108,7 @@ filterEven([1, 2, 3, 4, 5, 6]); // [2, 4, 6]
 `filterBy` is a reusable higher-order function. Partial application turns it
 into `filterEven`, a function that expresses one concrete operation.
 
-*Intent becomes more declarative*
+_Intent becomes more declarative_
 
 ```typescript
 const greaterThan = (min: number) => (value: number) => value > min;
@@ -117,12 +117,12 @@ const filterGreaterThan10 = filterBy(greaterThan(10));
 filterGreaterThan10([5, 12, 8, 20, 3]); // [12, 20]
 ```
 
-`greaterThan(10)` describes *what* qualifies. `filterBy` handles *how* the array
+`greaterThan(10)` describes _what_ qualifies. `filterBy` handles _how_ the array
 is traversed.
 
 Many functional utility libraries provide `curry` as a foundation. Looking at
 the implementation in Rambda left me with a question: what would it take to
-build *the same flexibility with useful TypeScript inference*?
+build _the same flexibility with useful TypeScript inference_?
 
 <Figure
   src="./images/rambda-curry-source.png"
@@ -140,12 +140,12 @@ That made `curry` a good TypeScript exercise.
 
 There are two common calling styles:
 
-- *Strict curry* accepts exactly one argument at each step.
-- *Loose curry* accepts one or more arguments at each step.
+- _Strict curry_ accepts exactly one argument at each step.
+- _Loose curry_ accepts one or more arguments at each step.
 
 Haskell is designed around functional programming, and all of its functions are
 curried by default. Even a function that appears to accept several arguments
-behaves as *a chain of unary functions*:
+behaves as _a chain of unary functions_:
 
 ```haskell
 add :: Int -> Int -> Int
@@ -162,7 +162,7 @@ single-argument applications.
 That consistency makes behavior predictable and composition natural. In
 JavaScript, though, forcing every caller to use nested single-argument calls can
 be inconvenient. Loose currying preserves partial application while allowing a
-*more practical calling style*, so that is what I chose to build:
+_more practical calling style_, so that is what I chose to build:
 
 ```typescript
 const sum = (a: number, b: number, c: number) => a + b + c;
@@ -175,8 +175,8 @@ curriedSum(1, 2, 3);
 
 <SectionHeading title="1.2. The Runtime Implementation" />
 
-The runtime design is simple: *collect arguments until there are enough to call
-the original function*. Otherwise, return another curried function and continue
+The runtime design is simple: _collect arguments until there are enough to call
+the original function_. Otherwise, return another curried function and continue
 recursively.
 
 ```typescript
@@ -238,8 +238,8 @@ type PartialParams = Partial<[number, string, boolean]>;
 // [number?, string?, boolean?]
 ```
 
-That gets the runtime structure working, but *the function is still not type
-safe*.
+That gets the runtime structure working, but _the function is still not type
+safe_.
 
 # 2. Making the Input Generic
 
@@ -260,8 +260,8 @@ TypeScript should reject the string, but every argument has already widened to
 
 <SectionHeading title="2.2. Capturing the Original Function Type" />
 
-Making the input function generic allows the implementation to *retain its
-parameter tuple*:
+Making the input function generic allows the implementation to _retain its
+parameter tuple_:
 
 ```typescript
 function curry<Fn extends AnyFunc>(
@@ -316,7 +316,7 @@ type PartialParams = Partial<Params>;
 
 For a rest parameter, however, TypeScript needs a type it can confidently treat
 as an array or tuple. I wanted an explicit tuple transformation that preserved
-*both ordering and optional positions*.
+_both ordering and optional positions_.
 
 <SectionHeading title="3.2. Building PartialTuple" />
 
@@ -329,7 +329,7 @@ type Result = PartialTuple<Example>;
 ```
 
 Ordering matters here for more than satisfying the rest parameter. Currying
-*applies parameters from left to right*. A caller may stop after any prefix, but
+_applies parameters from left to right_. A caller may stop after any prefix, but
 should not skip earlier positions and supply a later one in isolation:
 
 ```typescript
@@ -371,8 +371,8 @@ function curry<Fn extends AnyFunc>(
 }
 ```
 
-The rest-parameter error disappears, and *invalid parameter order can be
-rejected at the type level*.
+The rest-parameter error disappears, and _invalid parameter order can be
+rejected at the type level_.
 
 <Figure
   src="./images/invalid-argument-error.png"
@@ -464,8 +464,8 @@ PartialTuple<[number, string, boolean]>
 
 <SectionHeading title="4.1. Why Empty Calls Should Be Invalid" />
 
-Currying is useful because it partially applies an original function. *A call
-that supplies no arguments makes no progress*:
+Currying is useful because it partially applies an original function. _A call
+that supplies no arguments makes no progress_:
 
 ```typescript
 const add = (a: number, b: number, c: number) => a + b + c;
@@ -499,8 +499,8 @@ type Result = AtLeastOneParam<Fn>;
 // [number, string?, boolean?]
 ```
 
-This shape supports loose partial application while *guaranteeing that every
-call contributes at least one value*.
+This shape supports loose partial application while _guaranteeing that every
+call contributes at least one value_.
 
 <Figure
   src="./images/empty-call-error.png"
@@ -515,8 +515,8 @@ call contributes at least one value*.
 The runtime function is ready, but its return type still needs to describe two
 different outcomes:
 
-1. *If parameters remain*, return another curried function.
-2. *If every parameter has been supplied*, return the original result.
+1. _If parameters remain_, return another curried function.
+2. _If every parameter has been supplied_, return the original result.
 
 <SectionHeading title="RemainingParameters" />
 
@@ -541,7 +541,7 @@ type Result = RemainingParameters<[number, string], [number, string, boolean]>;
 // [boolean]
 ```
 
-The recursion *consumes both tuples in parallel*. When there are no applied
+The recursion _consumes both tuples in parallel_. When there are no applied
 arguments left, the remaining expected tuple is the answer.
 
 <SectionHeading title="CurriedFunction" />
@@ -587,8 +587,8 @@ function curry<Fn extends AnyFunc>(
 
 # 6. The Finished API
 
-The final type supports flexible grouping *without losing parameter order,
-argument types, or the original return type*:
+The final type supports flexible grouping _without losing parameter order,
+argument types, or the original return type_:
 
 ```typescript
 const sum = (a: number, b: number, c: number) => a + b + c;
@@ -608,10 +608,10 @@ curriedSum(1)("2"); // Type error
 ```
 
 The runtime behavior was the easy part: collect arguments and recurse until
-`fn.length` is satisfied. *The real work was expressing the same state machine
-in the type system.*
+`fn.length` is satisfied. _The real work was expressing the same state machine
+in the type system._
 
-*Recursive tuple types turned out to be a natural fit.* `PartialTuple` models the
+_Recursive tuple types turned out to be a natural fit._ `PartialTuple` models the
 prefix collected so far, `AtLeastOneParam` guarantees progress on every call,
 and `RemainingParameters` determines whether the next value should be another
 function or the final result.
