@@ -18,6 +18,9 @@ categories:
       graphql:
         label: GraphQL
         color: "#E535AB"
+      functional-programming:
+        label: Functional Programming
+        color: "#8B5CF6"
       react:
         label: React
         color: "#087EA4"

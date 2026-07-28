@@ -128,14 +128,18 @@ async function assetExists(
 }
 
 function validateMdxBody(body: string, file: string, issues: ContentIssue[]) {
-  if (/^\s*(?:import|export)\s/m.test(body)) {
+  const proseOnly = body
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`\n]*`/g, "");
+
+  if (/^\s*(?:import|export)\s/m.test(proseOnly)) {
     issues.push({
       file,
       message: "MDX imports and exports are not allowed in article content.",
     });
   }
 
-  const componentMatches = body.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g);
+  const componentMatches = proseOnly.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g);
   for (const match of componentMatches) {
     const component = match[1];
     if (component && !ALLOWED_MDX_COMPONENTS.has(component)) {
