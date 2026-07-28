@@ -1,0 +1,41 @@
+{
+  "$schema": "./taxonomy.schema.json",
+  "kinds": {
+    "case-study": {
+      "label": "Case Studies",
+      "singularLabel": "Case study",
+      "description": "Product and engineering work grounded in real outcomes",
+      "color": "#B7CF9B",
+      "order": 1
+    },
+    "technical-article": {
+      "label": "Technical Articles",
+      "singularLabel": "Technical article",
+      "description": "Technical explorations, implementation notes, and research",
+      "color": "#8B5CF6",
+      "order": 2
+    }
+  },
+  "topics": {
+    "automation": {
+      "label": "Automation",
+      "color": "#B7CF9B"
+    },
+    "graphql": {
+      "label": "GraphQL",
+      "color": "#E535AB"
+    },
+    "functional-programming": {
+      "label": "Functional Programming",
+      "color": "#8B5CF6"
+    },
+    "react": {
+      "label": "React",
+      "color": "#087EA4"
+    },
+    "bundler": {
+      "label": "Bundler",
+      "color": "#F0A000"
+    }
+  }
+}

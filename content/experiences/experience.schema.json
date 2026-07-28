@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "experience.schema.json",
+  "title": "Portfolio experiences",
+  "type": "object",
+  "required": ["$schema", "experiences"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "experiences": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/experience" }
+    }
+  },
+  "definitions": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "experience": {
+      "type": "object",
+      "required": [
+        "id",
+        "organization",
+        "role",
+        "period",
+        "summary",
+        "highlights",
+        "images"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/definitions/slug" },
+        "organization": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "period": {
+          "type": "object",
+          "required": ["start", "end"],
+          "additionalProperties": false,
+          "properties": {
+            "start": { "type": "string", "minLength": 1 },
+            "end": {
+              "anyOf": [
+                { "type": "string", "minLength": 1 },
+                { "type": "null" }
+              ]
+            }
+          }
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "highlights": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\./images/"
+          }
+        }
+      }
+    }
+  }
+}

@@ -4,12 +4,11 @@ description: A deep dive into how React evolved from batching state updates to c
 slug: why-setstate-is-asynchronous
 date: 2026-01-06
 draft: false
-categories:
-  automation: []
-  deep-dive:
-    - react
-  works: []
-spotlightIn: []
+kind: technical-article
+topics:
+  - react
+experienceIds: []
+spotlightIn: {}
 related: []
 thumbnail: "./images/react-lanes.png"
 ---
@@ -44,8 +43,8 @@ way.
 
 <SectionHeading title="1. UI = f(state): UI as a Pure Function" />
 
-Begin with a simple assumption: *what if calling `setState` changed the state
-and redrew the screen immediately?*
+Begin with a simple assumption: _what if calling `setState` changed the state
+and redrew the screen immediately?_
 
 At first, that sounds direct and intuitive. Change the state and the UI changes.
 But the model reaches its limits quickly:
@@ -65,8 +64,8 @@ React's basic view of rendering is mathematical:
 
 Rendering is not merely drawing pixels. It is the computation that receives the
 current state and props as inputs and determines what UI should exist. The
-important premise is that *the same input should always produce the same
-result*.
+important premise is that _the same input should always produce the same
+result_.
 
 If state changes halfway through the calculation, the function can no longer be
 trusted. A function that continues with externally changed inputs is difficult
@@ -79,8 +78,8 @@ to the DOM and runs effects. Side effects are forbidden during the Render Phase
 because this phase is only a calculation.
 
 Seen in that context, “apply the update on the next cycle” has a precise
-meaning: *the update does not change the current calculation; it becomes an
-input to the next render*.
+meaning: _the update does not change the current calculation; it becomes an
+input to the next render_.
 
 The asynchronous behavior of `setState` is therefore not merely a performance
 trick. It is a structural choice that makes rendering a safe computation.
@@ -90,14 +89,14 @@ trick. It is a structural choice that makes rendering a safe computation.
 Consider this code:
 
 ```typescript
-setA(1)
-setB(2)
-setC(3)
+setA(1);
+setB(2);
+setC(3);
 ```
 
 From an imperative point of view, it looks like three updates. React, however,
 is ultimately less interested in how many intermediate steps occurred than in
-the final question: *given the resulting state, what UI should it calculate?*
+the final question: _given the resulting state, what UI should it calculate?_
 
 Calculating once with only A changed, again with A and B changed, and then a
 third time with A, B, and C changed repeats work whose intermediate results are
@@ -233,8 +232,8 @@ limitations. The simpler model was sufficient.
 
 <SectionHeading title="3. Suspense Broke the Old Assumptions" />
 
-Suspense formally introduced a new rendering state: *UI that is not ready
-yet*. Previously, IO-bound delays such as network, file, or asynchronous
+Suspense formally introduced a new rendering state: _UI that is not ready
+yet_. Previously, IO-bound delays such as network, file, or asynchronous
 requests were usually handled outside rendering with branches such as
 `isLoading`. With Suspense, React may discover during rendering that required
 data or code is not ready.
@@ -287,6 +286,7 @@ Concurrency provides the solution.
       parallelism is about executing related operations at the same instant.
     - Concurrency describes how to structure several tasks; parallelism
       describes how to run several tasks simultaneously.
+
   </div>
 </details>
 
@@ -328,13 +328,13 @@ search field may create several updates:
 
 Updates with different priorities and different fates coexist in one flow.
 Trying to express them as a single line creates a natural limit. React instead
-treats pending work as a *set that can contain several Lanes at once*, using a
+treats pending work as a _set that can contain several Lanes at once_, using a
 bitmask as its representation.
 
 Conceptually:
 
 ```typescript
-const lanes = { SyncLane, TransitionLane }
+const lanes = { SyncLane, TransitionLane };
 ```
 
 Internally, the set can be represented like this:
@@ -371,23 +371,23 @@ first.
 The Lane definitions include groups such as:
 
 ```typescript
-const NoLanes: Lanes = /*         */ 0b0000000000000000000000000000000
-const NoLane: Lane = /*           */ 0b0000000000000000000000000000000
+const NoLanes: Lanes = /*         */ 0b0000000000000000000000000000000;
+const NoLane: Lane = /*           */ 0b0000000000000000000000000000000;
 
-const SyncLane: Lane = /*         */ 0b0000000000000000000000000000010
-const InputContinuousLane: Lane =    0b0000000000000000000000000001000
-const DefaultLane: Lane = /*      */ 0b0000000000000000000000000100000
-const SyncUpdateLanes: Lane = /*  */ 0b0000000000000000000000000101010
+const SyncLane: Lane = /*         */ 0b0000000000000000000000000000010;
+const InputContinuousLane: Lane = 0b0000000000000000000000000001000;
+const DefaultLane: Lane = /*      */ 0b0000000000000000000000000100000;
+const SyncUpdateLanes: Lane = /*  */ 0b0000000000000000000000000101010;
 
-const TransitionLanes: Lanes = /* */ 0b0000000011111111111111110000000
-const TransitionLane1: Lane = /*  */ 0b0000000000000000000000010000000
+const TransitionLanes: Lanes = /* */ 0b0000000011111111111111110000000;
+const TransitionLane1: Lane = /*  */ 0b0000000000000000000000010000000;
 // ...
-const TransitionLane16: Lane = /* */ 0b0000000010000000000000000000000
+const TransitionLane16: Lane = /* */ 0b0000000010000000000000000000000;
 
-const RetryLanes: Lanes = /*      */ 0b0000111100000000000000000000000
-const RetryLane1: Lane = /*       */ 0b0000000100000000000000000000000
+const RetryLanes: Lanes = /*      */ 0b0000111100000000000000000000000;
+const RetryLane1: Lane = /*       */ 0b0000000100000000000000000000000;
 // ...
-const RetryLane4: Lane = /*       */ 0b0000100000000000000000000000000
+const RetryLane4: Lane = /*       */ 0b0000100000000000000000000000000;
 ```
 
 <Figure
@@ -423,13 +423,13 @@ DOM events are then classified:
 ```javascript
 function getEventPriority(domEventName: DOMEventName): EventPriority {
   switch (domEventName) {
-    case 'click':
+    case "click":
     // …
-    case 'input':
+    case "input":
       return DiscreteEventPriority;
-    case 'drag':
+    case "drag":
     // …
-    case 'wheel':
+    case "wheel":
       return ContinuousEventPriority;
     default:
       return DefaultEventPriority;
@@ -439,7 +439,7 @@ function getEventPriority(domEventName: DOMEventName): EventPriority {
 
 <SectionHeading title="3. How Lanes Drive Scheduling" />
 
-*Step 1 — An update receives a Lane*
+_Step 1 — An update receives a Lane_
 
 When `setState` is called, React first determines the kind of event that caused
 the update and selects a Lane:
@@ -456,19 +456,19 @@ update queue:
 // Conceptually
 update = {
   payload,
-  lane: SyncLane
-}
+  lane: SyncLane,
+};
 ```
 
 Rendering has not started yet. At this point the Lane records the intention:
 what priority and behavior should this update have?
 
-*Step 2 — Scheduling chooses the Lane set to process now*
+_Step 2 — Scheduling chooses the Lane set to process now_
 
 React collects pending updates at the root:
 
 ```typescript
-root.pendingLanes
+root.pendingLanes;
 // Unprocessed lanes.
 // Example: 00000101 (SyncLane + TransitionLane)
 ```
@@ -496,8 +496,7 @@ function getNextLanes(root, wipLanes) {
 
   const nonIdlePendingLanes = pendingLanes & NonIdleLanes;
 
-  const unblockedLanes =
-    nonIdlePendingLanes & ~(suspendedLanes & ~pingedLanes);
+  const unblockedLanes = nonIdlePendingLanes & ~(suspendedLanes & ~pingedLanes);
 
   nextLanes = unblockedLanes;
   return nextLanes;
@@ -506,7 +505,7 @@ function getNextLanes(root, wipLanes) {
 
 The result becomes `renderLanes`, the Lane set used for the current render.
 
-*Step 3 — Rendering checks whether each update belongs*
+_Step 3 — Rendering checks whether each update belongs_
 
 As React traverses the Fiber tree, it checks whether an update's Lane is
 included in the current `renderLanes`:
@@ -528,16 +527,16 @@ Consider a single keystroke that creates two updates:
 The root accumulates both:
 
 ```typescript
-queryFiber.updateQueue += { payload: "r", lane: SyncLane }
-resultsFiber.updateQueue += { payload: filteredResults, lane: TransitionLane }
+queryFiber.updateQueue += { payload: "r", lane: SyncLane };
+resultsFiber.updateQueue += { payload: filteredResults, lane: TransitionLane };
 
-root.pendingLanes = SyncLane | TransitionLane // 00000101
+root.pendingLanes = SyncLane | TransitionLane; // 00000101
 ```
 
 The scheduler chooses the highest-priority work:
 
 ```typescript
-renderLanes = SyncLane
+renderLanes = SyncLane;
 ```
 
 The query update belongs to `renderLanes`, so React applies it and commits the

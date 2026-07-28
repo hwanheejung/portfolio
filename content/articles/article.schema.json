@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "article.schema.json",
+  "title": "Article frontmatter",
+  "type": "object",
+  "required": [
+    "title",
+    "slug",
+    "date",
+    "draft",
+    "kind",
+    "topics",
+    "experienceIds",
+    "spotlightIn",
+    "related"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "minLength": 1 },
+    "slug": { "$ref": "#/definitions/slug" },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "draft": { "type": "boolean" },
+    "description": { "type": "string", "minLength": 1 },
+    "thumbnail": { "type": "string", "pattern": "^\\./images/" },
+    "kind": { "$ref": "#/definitions/slug" },
+    "topics": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/slug" }
+    },
+    "experienceIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/slug" }
+    },
+    "spotlightIn": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "home": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "related": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/slug" }
+    }
+  },
+  "definitions": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    }
+  }
+}

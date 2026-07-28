@@ -1,8 +1,6 @@
-export type ArticleTocItem = {
-  id: string;
-  level: 1 | 2 | 3;
-  title: string;
-};
+import type { ArticleTocItem } from "@/__generated__/content";
+
+export type { ArticleTocItem };
 
 export function createHeadingId(title: string) {
   return title

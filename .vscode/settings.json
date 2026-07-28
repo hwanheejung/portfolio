@@ -1,0 +1,6 @@
+{
+  "[mdx]": {
+    "editor.formatOnSave": true
+  },
+  "prettier.proseWrap": "preserve"
+}

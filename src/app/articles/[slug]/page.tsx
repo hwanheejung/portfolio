@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,11 +13,11 @@ import {
 } from "@/components/mdx/registry";
 import {
   getArticle,
+  getArticleToc,
   getArticles,
   getTaxonomy,
   resolveArticleSlugs,
 } from "@/lib/content";
-import { extractArticleToc } from "@/lib/content/toc";
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -70,15 +67,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     import(`../../../../content/articles/${slug}/index.mdx`),
     resolveArticleSlugs(article.related),
   ]);
-  const articleSource = await readFile(
-    path.join(process.cwd(), "content", "articles", slug, "index.mdx"),
-    "utf8"
-  );
-  const articleBody = articleSource.replace(
-    /^---\r?\n[\s\S]*?\r?\n---\r?\n?/,
-    ""
-  );
-  const tocItems = extractArticleToc(articleBody);
+  const tocItems = getArticleToc(slug);
 
   return (
     <article className="page-shell">

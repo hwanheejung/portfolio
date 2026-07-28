@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { ArticleSummary } from "@schema/article";
+import type { ArticleSummary } from "@/__generated__/content";
 
 import { ArticleMeta } from "./article-meta";
 import type { DisplayTag } from "./types";

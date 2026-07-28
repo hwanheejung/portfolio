@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import {
-  type ArticleCategoryId,
-  articleCategoryIds,
+  type ArticleKindId,
   type ArticleSummary,
-} from "@schema/article";
+} from "@/__generated__/content";
 import {
   getArticles,
   getTaxonomy,
-  orderArticlesForCategory,
+  orderArticlesForKind,
 } from "@/lib/content";
 import { Skeleton } from "@/shared/ui/skeleton";
 
@@ -26,12 +25,13 @@ export default async function ArticlesPage() {
     getTaxonomy(),
   ]);
 
-  const articlesByCategory = Object.fromEntries(
-    articleCategoryIds.map((category) => [
-      category,
-      orderArticlesForCategory(articles, category),
+  const kindIds = Object.keys(taxonomy.kinds) as ArticleKindId[];
+  const articlesByKind = Object.fromEntries(
+    kindIds.map((kind) => [
+      kind,
+      orderArticlesForKind(articles, kind),
     ]),
-  ) as Record<ArticleCategoryId, ArticleSummary[]>;
+  ) as Record<ArticleKindId, ArticleSummary[]>;
 
   return (
     <div className="page-shell">
@@ -55,7 +55,7 @@ export default async function ArticlesPage() {
           }
         >
           <ArticlesBrowser
-            articlesByCategory={articlesByCategory}
+            articlesByKind={articlesByKind}
             taxonomy={taxonomy}
           />
         </Suspense>

@@ -1,33 +1,32 @@
-import type { ArticleCategoryId, ArticleSummary } from "@schema/article";
-import type { Taxonomy } from "@schema/taxonomy";
+import type {
+  ArticleSummary,
+  Taxonomy,
+} from "@/__generated__/content";
 
 import type { DisplayTag } from "./types";
 
 export function getDisplayTags(
   article: ArticleSummary,
   taxonomy: Taxonomy,
-  category?: ArticleCategoryId,
 ) {
-  const categories = category
-    ? [category]
-    : (Object.keys(article.categories) as ArticleCategoryId[]);
-  const seen = new Set<string>();
-  const tags: DisplayTag[] = [];
+  const kind = taxonomy.kinds[article.kind];
+  const tags: DisplayTag[] = kind
+    ? [
+        {
+          id: article.kind,
+          label: kind.singularLabel,
+          color: kind.color,
+        },
+      ]
+    : [];
 
-  for (const categoryId of categories) {
-    for (const tagId of article.categories[categoryId]) {
-      const tag = taxonomy.categories[categoryId].tags[tagId];
-      const key = `${tagId}-${tag?.label}`;
-
-      if (!tag || seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
+  for (const topicId of article.topics) {
+    const topic = taxonomy.topics[topicId];
+    if (topic) {
       tags.push({
-        id: tagId,
-        label: tag.label,
-        color: tag.color,
+        id: topicId,
+        label: topic.label,
+        color: topic.color,
       });
     }
   }

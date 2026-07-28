@@ -1,31 +1,38 @@
 import Link from "next/link";
 
-const footerGroups = [
-  {
-    title: "Pages",
-    links: [
-      { label: "Home", href: "/" },
-      { label: "Articles", href: "/articles" },
-      { label: "About", href: "/about" },
-    ],
-  },
-  {
-    title: "Featured work",
-    links: [
-      { label: "Karrot · Local jobs", href: "/articles/karrot-local-jobs" },
-      { label: "Naver · Automation", href: "/articles/automation-system" },
-    ],
-  },
-  {
-    title: "Articles",
-    links: [
-      { label: "Automation", href: "/articles#automation" },
-      { label: "Deep Dive", href: "/articles#deep-dive" },
-    ],
-  },
-] as const;
+import { getHomeContent, getTaxonomy } from "@/lib/content";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const [home, taxonomy] = await Promise.all([
+    getHomeContent(),
+    getTaxonomy(),
+  ]);
+  const footerGroups = [
+    {
+      title: "Pages",
+      links: [
+        { label: "Home", href: "/" },
+        { label: "Articles", href: "/articles" },
+        { label: "About", href: "/about" },
+      ],
+    },
+    {
+      title: "Featured",
+      links: home.featuredContent.map((article) => ({
+        label: article.title,
+        href: `/articles/${article.slug}`,
+      })),
+    },
+    {
+      title: "Articles",
+      links: Object.entries(taxonomy.kinds)
+        .toSorted(([, a], [, b]) => a.order - b.order)
+        .map(([id, kind]) => ({
+          label: kind.label,
+          href: `/articles#${id}`,
+        })),
+    },
+  ];
   return (
     <footer className="mt-24 border-t border-border bg-[#100e0c] text-white md:mt-32">
       <div className="page-shell py-16 md:py-20">

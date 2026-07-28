@@ -11,7 +11,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": new URL("./src", import.meta.url).pathname,
-      "@schema": new URL("./schema", import.meta.url).pathname,
     },
   },
 });

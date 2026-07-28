@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-import type { ArticleTocItem } from "@/lib/content/toc";
+import type { ArticleTocItem } from "@/__generated__/content";
 import { cn } from "@/shared/lib/cn";
 
 type Props = {
-  items: ArticleTocItem[];
+  items: readonly ArticleTocItem[];
 };
 
 export function ArticleToc({ items }: Props) {

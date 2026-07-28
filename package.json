@@ -6,18 +6,18 @@
   "packageManager": "pnpm@10.28.1",
   "scripts": {
     "dev": "next dev --webpack",
-    "predev": "pnpm content:prepare",
+    "predev": "pnpm content:compile",
     "build": "next build --webpack",
-    "prebuild": "pnpm content:check && pnpm content:prepare",
+    "prebuild": "pnpm content:compile",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "article:new": "node --import tsx scripts/article-new.ts",
-    "article:publish": "node --import tsx scripts/article-publish.ts",
-    "article:check": "node --import tsx scripts/article-check.ts",
-    "content:check": "node --import tsx scripts/content-check.ts",
-    "content:prepare": "node --import tsx scripts/content-prepare.ts"
+    "article:new": "node scripts/article-new.mjs",
+    "article:publish": "node scripts/article-publish.mjs",
+    "article:check": "node scripts/article-check.mjs",
+    "content:check": "node scripts/content-compile.mjs --check",
+    "content:compile": "node scripts/content-compile.mjs"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.0",
@@ -31,8 +31,7 @@
     "remark-frontmatter": "^5.0.0",
     "remark-mdx-frontmatter": "^5.2.0",
     "tailwind-merge": "^3.3.1",
-    "yaml": "^2.8.1",
-    "zod": "^4.1.12"
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",
@@ -40,10 +39,10 @@
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "ajv": "6.15.0",
     "eslint": "^9.39.0",
     "eslint-config-next": "^16.0.0",
     "tailwindcss": "^4.1.14",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.8"
   }

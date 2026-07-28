@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import type { ArticleSummary } from "@schema/article";
+import type { ArticleSummary } from "@/__generated__/content";
 import { cn } from "@/shared/lib/cn";
 
 import { ArticleMeta } from "./article-meta";

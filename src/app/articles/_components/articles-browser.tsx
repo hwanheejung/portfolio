@@ -5,28 +5,26 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
-  type ArticleCategoryId,
-  articleCategoryIds,
+  type ArticleKindId,
   type ArticleSummary,
-} from "@schema/article";
-import type { Taxonomy } from "@schema/taxonomy";
+  type Taxonomy,
+} from "@/__generated__/content";
 import { getDisplayTags } from "@/components/article/get-display-tags";
 import { Badge } from "@/shared/ui/badge";
 
-type ArticlesByCategory = Record<ArticleCategoryId, ArticleSummary[]>;
-type ActiveArticleByCategory = Record<ArticleCategoryId, string | null>;
+type ArticlesByKind = Record<ArticleKindId, ArticleSummary[]>;
+type ActiveArticleByKind = Record<ArticleKindId, string | null>;
 
 function getSpotlightArticles(
-  articlesByCategory: ArticlesByCategory
-): ActiveArticleByCategory {
+  articlesByKind: ArticlesByKind,
+  kindIds: readonly ArticleKindId[],
+): ActiveArticleByKind {
   return Object.fromEntries(
-    articleCategoryIds.map((category) => [
-      category,
-      articlesByCategory[category].find((article) =>
-        article.spotlightIn.includes(category)
-      )?.slug ?? null,
+    kindIds.map((kind) => [
+      kind,
+      articlesByKind[kind][0]?.slug ?? null,
     ])
-  ) as ActiveArticleByCategory;
+  ) as ActiveArticleByKind;
 }
 
 function DisclosureChevron({ open }: { open: boolean }) {
@@ -51,7 +49,7 @@ function DisclosureChevron({ open }: { open: boolean }) {
 
 function DisclosureArticle({
   article,
-  category,
+  kind,
   open,
   taxonomy,
   onFocusChange,
@@ -59,16 +57,15 @@ function DisclosureArticle({
   onToggle,
 }: {
   article: ArticleSummary;
-  category: ArticleCategoryId;
+  kind: ArticleKindId;
   open: boolean;
   taxonomy: Taxonomy;
   onFocusChange: (slug: string | null) => void;
   onHoverChange: (slug: string | null) => void;
   onToggle: () => void;
 }) {
-  const categoryTags = getDisplayTags(article, taxonomy, category);
   const allTags = getDisplayTags(article, taxonomy);
-  const panelId = `${category}-${article.slug}-details`;
+  const panelId = `${kind}-${article.slug}-details`;
 
   return (
     <article
@@ -108,7 +105,7 @@ function DisclosureArticle({
           <span className="hidden flex-wrap justify-end gap-2 md:flex">
             {open
               ? null
-              : categoryTags.slice(0, 2).map((tag) => (
+              : allTags.slice(0, 2).map((tag) => (
                   <Badge color={tag.color} key={tag.id}>
                     {tag.label}
                   </Badge>
@@ -177,95 +174,100 @@ function DisclosureArticle({
 }
 
 export function ArticlesBrowser({
-  articlesByCategory,
+  articlesByKind,
   taxonomy,
 }: {
-  articlesByCategory: ArticlesByCategory;
+  articlesByKind: ArticlesByKind;
   taxonomy: Taxonomy;
 }) {
-  const [pinned, setPinned] = useState<ActiveArticleByCategory>(() =>
-    getSpotlightArticles(articlesByCategory)
+  const kindIds = useMemo(
+    () => Object.keys(taxonomy.kinds) as ArticleKindId[],
+    [taxonomy],
   );
-  const [hovered, setHovered] = useState<ActiveArticleByCategory>(
+  const [pinned, setPinned] = useState<ActiveArticleByKind>(() =>
+    getSpotlightArticles(articlesByKind, kindIds)
+  );
+  const [hovered, setHovered] = useState<ActiveArticleByKind>(
     () =>
       Object.fromEntries(
-        articleCategoryIds.map((category) => [category, null])
-      ) as ActiveArticleByCategory
+        kindIds.map((kind) => [kind, null])
+      ) as ActiveArticleByKind
   );
-  const [focused, setFocused] = useState<ActiveArticleByCategory>(
+  const [focused, setFocused] = useState<ActiveArticleByKind>(
     () =>
       Object.fromEntries(
-        articleCategoryIds.map((category) => [category, null])
-      ) as ActiveArticleByCategory
+        kindIds.map((kind) => [kind, null])
+      ) as ActiveArticleByKind
   );
 
-  const orderedCategories = useMemo(
+  const orderedKinds = useMemo(
     () =>
-      [...articleCategoryIds].sort(
-        (a, b) => taxonomy.categories[a].order - taxonomy.categories[b].order
+      [...kindIds].sort(
+        (a, b) => taxonomy.kinds[a]!.order - taxonomy.kinds[b]!.order
       ),
-    [taxonomy]
+    [kindIds, taxonomy]
   );
 
   return (
     <div className="space-y-20 md:space-y-28">
-      {orderedCategories.map((category) => {
-        const categoryData = taxonomy.categories[category];
+      {orderedKinds.map((kind) => {
+        const kindData = taxonomy.kinds[kind];
+        if (!kindData) return null;
         const openSlug =
-          hovered[category] ?? focused[category] ?? pinned[category];
+          hovered[kind] ?? focused[kind] ?? pinned[kind];
 
         return (
           <section
             className="scroll-mt-24 grid gap-8 md:grid-cols-[11rem_1fr] md:gap-14"
-            id={category}
-            key={category}
+            id={kind}
+            key={kind}
           >
             <aside className="article-category-heading md:pt-1">
               <h2 className="display-font max-w-40 text-xl leading-6">
-                {categoryData.label}
+                {kindData.label}
               </h2>
               <p className="mt-2 max-w-40 text-xs leading-5 text-muted-foreground">
-                {categoryData.description}
+                {kindData.description}
               </p>
             </aside>
 
             <div className="article-disclosure-list">
-              {articlesByCategory[category].map((article) => (
+              {articlesByKind[kind].map((article) => (
                 <DisclosureArticle
                   article={article}
-                  category={category}
+                  kind={kind}
                   key={article.slug}
                   onFocusChange={(slug) =>
                     setFocused((current) => ({
                       ...current,
-                      [category]: slug,
+                      [kind]: slug,
                     }))
                   }
                   onHoverChange={(slug) =>
                     setHovered((current) =>
-                      current[category] === slug
+                      current[kind] === slug
                         ? current
                         : {
                             ...current,
-                            [category]: slug,
+                            [kind]: slug,
                           }
                     )
                   }
                   onToggle={() => {
                     setPinned((current) => ({
                       ...current,
-                      [category]:
-                        current[category] === article.slug
+                      [kind]:
+                        current[kind] === article.slug
                           ? null
                           : article.slug,
                     }));
                     setFocused((current) => ({
                       ...current,
-                      [category]: null,
+                      [kind]: null,
                     }));
                     setHovered((current) => ({
                       ...current,
-                      [category]: null,
+                      [kind]: null,
                     }));
                   }}
                   open={openSlug === article.slug}

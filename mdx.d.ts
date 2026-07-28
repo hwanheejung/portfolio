@@ -1,8 +1,8 @@
 declare module "*.mdx" {
   import type { MDXContent } from "mdx/types";
-  import type { ArticleMetadata } from "./schema/article";
+  import type { ArticleSummary } from "./src/__generated__/content";
 
-  export const metadata: ArticleMetadata;
+  export const metadata: Omit<ArticleSummary, "thumbnailUrl" | "toc">;
   const Content: MDXContent;
   export default Content;
 }
