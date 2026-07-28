@@ -129,7 +129,7 @@ async function assetExists(
 
 function validateMdxBody(body: string, file: string, issues: ContentIssue[]) {
   const proseOnly = body
-    .replace(/```[\s\S]*?```/g, "")
+    .replace(/(?:\x60\x60\x60|~~~)[\s\S]*?(?:\x60\x60\x60|~~~)/g, "")
     .replace(/`[^`\n]*`/g, "");
 
   if (/^\s*(?:import|export)\s/m.test(proseOnly)) {
