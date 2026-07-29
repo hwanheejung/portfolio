@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "d512a343c93bca88",
+  "buildId": "60c529919881f9ef",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -152,6 +152,8 @@ export const content = {
   },
   "articleSlugs": [
     "why-setstate-is-asynchronous",
+    "react-rendering-strategies",
+    "why-react-left-class-components",
     "predictable-objects",
     "side-effect",
     "type-safe-pipe",
@@ -320,6 +322,151 @@ export const content = {
           "id": "do-oop-and-fp-solve-the-same-problem-differently",
           "level": 2,
           "title": "Do OOP and FP Solve the Same Problem Differently?"
+        }
+      ]
+    },
+    "react-rendering-strategies": {
+      "title": "A History of React Rendering Strategies",
+      "description": "Tracing React's rendering evolution from CSR to SSR, Streaming SSR, Selective Hydration, and React Server Components.",
+      "slug": "react-rendering-strategies",
+      "date": "2025-05-30",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "react"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "why-setstate-is-asynchronous",
+        "why-react-left-class-components"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/react-rendering-strategies/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "why-i-chose-this-topic",
+          "level": 1,
+          "title": "Why I Chose This Topic"
+        },
+        {
+          "id": "1-client-side-rendering-csr",
+          "level": 1,
+          "title": "1. Client-Side Rendering (CSR)"
+        },
+        {
+          "id": "how-it-works",
+          "level": 2,
+          "title": "How It Works"
+        },
+        {
+          "id": "the-problems-with-csr",
+          "level": 2,
+          "title": "The Problems with CSR"
+        },
+        {
+          "id": "2-server-side-rendering-ssr",
+          "level": 1,
+          "title": "2. Server-Side Rendering (SSR)"
+        },
+        {
+          "id": "how-ssr-solves-csrs-problems",
+          "level": 2,
+          "title": "How SSR Solves CSR's Problems"
+        },
+        {
+          "id": "why-react-does-not-simply-use-the-server-html",
+          "level": 2,
+          "title": "Why React Does Not Simply Use the Server HTML"
+        },
+        {
+          "id": "ssr-before-react-18-an-all-or-nothing-waterfall",
+          "level": 2,
+          "title": "SSR Before React 18: An All-or-Nothing Waterfall"
+        },
+        {
+          "id": "3-react-18-streaming-ssr-and-selective-hydration",
+          "level": 1,
+          "title": "3. React 18: Streaming SSR and Selective Hydration"
+        },
+        {
+          "id": "the-core-shift-a-page-is-many-units-not-one",
+          "level": 2,
+          "title": "The Core Shift: A Page Is Many Units, Not One"
+        },
+        {
+          "id": "streaming-ssr-send-ready-html-first",
+          "level": 2,
+          "title": "Streaming SSR: Send Ready HTML First"
+        },
+        {
+          "id": "streaming-ssr-was-not-enough",
+          "level": 2,
+          "title": "Streaming SSR Was Not Enough"
+        },
+        {
+          "id": "selective-hydration-split-the-order-of-interactivity-too",
+          "level": 2,
+          "title": "Selective Hydration: Split the Order of Interactivity Too"
+        },
+        {
+          "id": "why-streaming-ssr-and-selective-hydration-matter-together",
+          "level": 2,
+          "title": "Why Streaming SSR and Selective Hydration Matter Together"
+        },
+        {
+          "id": "problems-that-still-remained",
+          "level": 2,
+          "title": "Problems That Still Remained"
+        },
+        {
+          "id": "4-rsc-react-server-components",
+          "level": 1,
+          "title": "4. RSC (React Server Components)"
+        },
+        {
+          "id": "the-core-rsc-idea-not-hydrate-in-pieces-but-do-not-send-it",
+          "level": 2,
+          "title": "The Core RSC Idea: Not “Hydrate in Pieces,” but “Do Not Send It”"
+        },
+        {
+          "id": "react-server-component-payload",
+          "level": 2,
+          "title": "React Server Component Payload"
+        },
+        {
+          "id": "zero-client-javascript-for-that-component",
+          "level": 2,
+          "title": "Zero Client JavaScript for That Component"
+        },
+        {
+          "id": "hybrid-rendering",
+          "level": 2,
+          "title": "Hybrid Rendering"
+        },
+        {
+          "id": "data-fetching-reduce-the-api-boundary",
+          "level": 2,
+          "title": "Data Fetching: Reduce the API Boundary"
+        },
+        {
+          "id": "rendering-pipeline",
+          "level": 2,
+          "title": "Rendering Pipeline"
+        },
+        {
+          "id": "thoughts",
+          "level": 1,
+          "title": "Thoughts"
+        },
+        {
+          "id": "thoughts-on-react-19",
+          "level": 2,
+          "title": "Thoughts on React 19"
+        },
+        {
+          "id": "questions-to-continue-exploring",
+          "level": 2,
+          "title": "Questions to Continue Exploring"
         }
       ]
     },
@@ -717,6 +864,125 @@ export const content = {
           "id": "further-reading",
           "level": 2,
           "title": "Further Reading"
+        }
+      ]
+    },
+    "why-react-left-class-components": {
+      "title": "Why Did React Leave Class Components Behind?",
+      "description": "Exploring why React moved from class components to function components, from state snapshots and data flow to Hooks, concurrency, and Server Components.",
+      "slug": "why-react-left-class-components",
+      "date": "2025-04-19",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "react"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "why-setstate-is-asynchronous"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/why-react-left-class-components/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "1-in-react-the-result-matters-more-than-the-process",
+          "level": 1,
+          "title": "1. In React, the Result Matters More Than the Process"
+        },
+        {
+          "id": "2-can-you-trust-three-seconds-later",
+          "level": 1,
+          "title": "2. Can You Trust  Three Seconds Later?"
+        },
+        {
+          "id": "21-a-strange-counter-built-with-a-class-component",
+          "level": 2,
+          "title": "2.1. A Strange Counter Built with a Class Component"
+        },
+        {
+          "id": "22-what-happens-in-a-function-component",
+          "level": 2,
+          "title": "2.2. What Happens in a Function Component?"
+        },
+        {
+          "id": "23-reading-the-latest-state-in-a-function-component",
+          "level": 2,
+          "title": "2.3. Reading the Latest State in a Function Component"
+        },
+        {
+          "id": "3-in-class-components-functions-are-left-out-of-data-flow",
+          "level": 1,
+          "title": "3. In Class Components, Functions Are Left Out of Data Flow"
+        },
+        {
+          "id": "31-a-function-passed-as-a-prop-is-data-too",
+          "level": 2,
+          "title": "3.1. A Function Passed as a Prop Is Data Too"
+        },
+        {
+          "id": "32-reproducing-the-problem-parent-child-fetchdata",
+          "level": 2,
+          "title": "3.2. Reproducing the Problem: Parent → Child fetchData"
+        },
+        {
+          "id": "33-why-does-react-fiber-treat-the-function-as-invisible",
+          "level": 2,
+          "title": "3.3. Why Does React Fiber Treat the Function as Invisible?"
+        },
+        {
+          "id": "34-a-functional-solution-give-references-meaning",
+          "level": 2,
+          "title": "3.4. A Functional Solution: Give References Meaning"
+        },
+        {
+          "id": "4-class-lifecycles-focus-on-timing-rather-than-intent",
+          "level": 1,
+          "title": "4. Class Lifecycles Focus on Timing Rather Than Intent"
+        },
+        {
+          "id": "5-hooks-maximize-composition-and-reusability",
+          "level": 1,
+          "title": "5. Hooks Maximize Composition and Reusability"
+        },
+        {
+          "id": "51-can-logic-be-assembled-like-components",
+          "level": 2,
+          "title": "5.1. Can Logic Be Assembled Like Components?"
+        },
+        {
+          "id": "52-the-complexity-of-hocs-and-render-props",
+          "level": 2,
+          "title": "5.2. The Complexity of HOCs and Render Props"
+        },
+        {
+          "id": "53-flattening-with-hooks",
+          "level": 2,
+          "title": "5.3. Flattening with Hooks"
+        },
+        {
+          "id": "6-class-components-have-no-future",
+          "level": 1,
+          "title": "6. Class Components Have No Future"
+        },
+        {
+          "id": "61-technical-debt",
+          "level": 2,
+          "title": "6.1. Technical Debt"
+        },
+        {
+          "id": "62-still-could-we-build-it-with-classes",
+          "level": 2,
+          "title": "6.2. Still, Could We Build It with Classes?"
+        },
+        {
+          "id": "63-server-components-and-streaming-ssr-synergy-with-functions",
+          "level": 2,
+          "title": "6.3. Server Components and Streaming SSR: Synergy with Functions"
+        },
+        {
+          "id": "64-conclusion-when-weighing-costs-and-benefits-choose-functions",
+          "level": 2,
+          "title": "6.4. Conclusion: When Weighing Costs and Benefits, Choose Functions"
         }
       ]
     },

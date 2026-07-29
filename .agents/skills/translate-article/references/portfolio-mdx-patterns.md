@@ -81,6 +81,20 @@ Use for one compact idea. Available background colors are `default`, `gray`,
 An emoji is optional. Avoid it unless it adds a meaningful category or warning
 signal.
 
+## Table
+
+Use `Table` for comparison or reference tables. Set either background treatment
+only when the source has a header row or a label column.
+
+```mdx
+<Table
+  headerRow
+  headerColumn
+  columns={["Item", "Before", "After"]}
+  rows={[["State", "Mutable", "Immutable"]]}
+/>
+```
+
 ## Quote
 
 Standard Markdown blockquotes render through the repository's `Quote`

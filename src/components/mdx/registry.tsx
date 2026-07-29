@@ -11,6 +11,7 @@ import { Numbering } from "./numbering";
 import { PointGrid } from "./point-grid";
 import { Quote } from "./quote";
 import { SectionHeading } from "./section-heading";
+import { Table } from "./table";
 import { WhiteText } from "./white-text";
 import { createHeadingId } from "@/lib/content/toc";
 
@@ -30,6 +31,7 @@ const baseMdxComponents: MDXComponents = {
   PointGrid,
   blockquote: Quote,
   SectionHeading,
+  Table,
   em: WhiteText,
 };
 

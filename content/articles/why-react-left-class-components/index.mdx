@@ -1,0 +1,596 @@
+---
+title: Why Did React Leave Class Components Behind?
+description: Exploring why React moved from class components to function components, from state snapshots and data flow to Hooks, concurrency, and Server Components.
+slug: why-react-left-class-components
+date: 2025-04-19
+draft: false
+kind: technical-article
+topics:
+  - react
+spotlightIn: {}
+related: ["why-setstate-is-asynchronous"]
+thumbnail: "./images/thumbnail-editorial.png"
+---
+
+# 1. In React, the Result Matters More Than the Process
+
+React has pursued declarative UI from the beginning. What matters is not _how_
+we arrive at a goal, but _what_ we want to show. Under the philosophy that the
+result matters more than the process, React has evolved toward hiding complex
+procedures and expressing UI simply as the result of state.
+
+Class components do not quite fit that philosophy. These two examples produce
+the same UI, but the second asks readers to deal first with the _process_—a
+`render` method and `this` binding.
+
+```tsx
+// Function declaration: result-focused
+function Hello({ name }) {
+  return <h1>Hello, {name}</h1>;
+}
+
+// Class declaration: the process intervenes
+class Hello extends React.Component {
+  render() {
+    return <h1>Hello, {this.props.name}</h1>;
+  }
+}
+```
+
+Hooks arrived in React 16.8, marking a turning point in React's gradual move
+from class components to function components. This article looks at some of
+the reasons behind that shift.
+
+# 2. Can You Trust `this.state` Three Seconds Later?
+
+> _Watch out for stale state!_
+
+<SectionHeading title="2.1. A Strange Counter Built with a Class Component" />
+
+Imagine a Counter that logs its count three seconds after a button click. If
+you click it five times quickly, what should it log? We expect the value at
+each click—`1`, `2`, `3`, `4`, and `5`—three seconds later.
+
+But this class component does not behave that way:
+
+```tsx
+class Counter extends React.Component {
+  state = { count: 0 };
+
+  handleClick = () => this.setState(({ count }) => ({ count: count + 1 }));
+
+  componentDidMount() {
+    setTimeout(() => console.log(this.state.count), 3000);
+  }
+
+  render() {
+    return <button onClick={this.handleClick}>{this.state.count}</button>;
+  }
+}
+```
+
+**Scenario**
+
+1. Click the button five times quickly → `count = 5`
+2. Three seconds later, the console prints **`5`**—always the latest value.
+
+Why? A class component uses the `this.state` _reference_, which always points
+to the latest state. To log `1`, `2`, `3`, `4`, and `5` in a class-based
+structure, we need a separate variable or must manually create a closure inside
+the timeout callback.
+
+<SectionHeading title="2.2. What Happens in a Function Component?" />
+
+By contrast, a function component captures a state _snapshot_ in a closure for
+each render.
+
+<Callout title="Further reading" backgroundColor="gray" emoji="➕">
+  [Dan Abramov's guide to
+  useEffect](https://overreacted.io/a-complete-guide-to-useeffect/#each-render-has-its-own-props-and-state)
+  explains this model of rendering in much greater detail.
+</Callout>
+
+```tsx
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const id = setTimeout(() => console.log(count), 3000);
+    return () => clearTimeout(id);
+  }, [count]); // Each closure captures its render's snapshot.
+
+  return <button onClick={() => setCount((c) => c + 1)}>{count}</button>;
+}
+```
+
+Now it logs `1`, `2`, `3`, `4`, and `5` as expected. The `useEffect` callback
+seals the `count` value from the render in which it was created. Even when it
+runs later, that value does not change, so it records the state from the
+moment the button was clicked.
+
+<Table
+  headerRow
+  headerColumn
+  columns={["Item", <>Class <code>this.state</code> (reference)</>, "Function state (closure capture)"]}
+  rows={[
+    ["Memory location", "Value inside the instance object", "Variable in a render stack frame"],
+    ["Is the value fixed?", "Updated to the latest value across renders", "Immutable as a render-level snapshot"],
+    ["Async safety", "❌ Risk of stale state", "✅ Safe within a render scope"],
+    ["Strategy", <>Separate variables, <code>setState</code> callback, or <code>useRef</code></>, "Safe by default"],
+  ]}
+/>
+
+Class components have traditionally struggled with retrieving the wrong value
+from timeouts. This subtle difference between classes and functions can create
+serious bugs in timeouts, event listeners, and asynchronous calls.
+
+<SectionHeading title="2.3. Reading the Latest State in a Function Component" />
+
+When a function component really needs to read the latest state, as in the
+class example, it can use `useRef`:
+
+```tsx
+const countRef = useRef(0);
+useEffect(() => {
+  countRef.current = count;
+});
+```
+
+This satisfies both needs: a _latest value_ and a _snapshot_.
+
+# 3. In Class Components, Functions Are Left Out of Data Flow
+
+<SectionHeading title="3.1. A Function Passed as a Prop Is Data Too" />
+
+React emphasizes one-way data flow: everything flows through props. That must
+include functions as well as numbers and strings, otherwise the dependency
+graph is incomplete.
+
+Class methods, however, are permanently bound to an instance, so their
+reference (identity) does not change. React Fiber can therefore incorrectly
+decide that there is no dependency, leaving the function out of data flow.
+
+<SectionHeading title="3.2. Reproducing the Problem: Parent → Child fetchData" />
+
+Here, `Parent` passes a `fetchData` function to `Child`. The function depends
+on state in `Parent`.
+
+```tsx
+class Parent extends React.Component {
+  state = { query: "react" };
+
+  fetchData = () => {
+    const url =
+      "https://hn.algolia.com/api/v1/search?query=" + this.state.query;
+    return fetch(url).then((r) => r.json());
+  };
+
+  render() {
+    return <Child fetchData={this.fetchData} />;
+  }
+}
+
+class Child extends React.Component {
+  componentDidMount() {
+    this.props.fetchData();
+  }
+  componentDidUpdate(prevProps) {
+    if (this.props.fetchData !== prevProps.fetchData) {
+      this.props.fetchData(); // Never runs!
+    }
+  }
+  render() {
+    return null;
+  }
+}
+```
+
+Although it looks fine, there is a major problem: `fetchData` is a class
+method. It is tied to the instance's `this`, and React cannot tell that it
+depends on state. The function itself does not change when state changes, so
+the comparison in `componentDidUpdate` is always false:
+
+```tsx
+this.props.fetchData === prevProps.fetchData; // Always true
+```
+
+The child cannot call `fetchData` again even if the parent's state changes.
+To work around this, we have to pass `query` as another prop merely to compare
+the difference, even though the child only needs `this.props.fetchData`. This
+breaks component encapsulation and blurs concerns.
+
+> **Summary**
+>
+> - `this.fetchData` keeps the same reference as long as the class instance lives.
+> - Even if `query` changes from `react` to `vue`, `Child` cannot notice it.
+> - The result is stale server data, or an unnecessary `query` prop that breaks encapsulation.
+
+<SectionHeading title="3.3. Why Does React Fiber Treat the Function as Invisible?" />
+
+<Table
+  headerRow
+  headerColumn
+  columns={["Step", "What Fiber does", "Effect of the class method"]}
+  rows={[
+    ["Re-render trigger", <><code>Parent.setState</code> creates new VDOM</>, <><code>fetchData</code> reference stays the same</>],
+    ["Reconciliation", "Shallow prop equality is true → Child is skipped", "Child Fiber has no update"],
+    ["Commit", "Child is omitted; no effect hook or lifecycle call", "Data flow is cut off"],
+  ]}
+/>
+
+Dependency decisions use the question, “Did the reference change?” A class
+method is data, but it is treated as an unchanging _constant_.
+
+<SectionHeading title="3.4. A Functional Solution: Give References Meaning" />
+
+_1. `useCallback` with a dependency array_
+
+```tsx
+function Parent() {
+  const [query] = useState("react");
+  const fetchData = useCallback(() => {
+    const url = "https://hn.algolia.com/api/v1/search?query=" + query;
+    return fetch(url).then((r) => r.json());
+  }, [query]); // Re-created when query changes.
+
+  return <Child fetchData={fetchData} />;
+}
+```
+
+The function reference updates when `query` changes, so the child's effect can
+run again.
+
+_2. Separate concerns with a custom Hook_
+
+```tsx
+function useSearch(query) {
+  return useQuery(["hn", query], () =>
+    fetch(`https://hn.algolia.com/api/v1/search?query=${query}`).then((r) =>
+      r.json()
+    )
+  );
+}
+
+function Parent() {
+  const [query] = useState("react");
+  const result = useSearch(query);
+  return <Child result={result} />;
+}
+```
+
+`Child` receives only the data result, preserving encapsulation and making
+testing easier. This approach addresses SRP, performance, testing, and bug
+reduction together. In React, we should not forget that a function is data
+that can change too.
+
+# 4. Class Lifecycles Focus on Timing Rather Than Intent
+
+To run effects in class components, we work with three lifecycle methods:
+
+- `componentDidMount`
+- `componentDidUpdate`
+- `componentWillUnmount`
+
+Working directly with lifecycles organizes code around _when_ and _how_
+something runs, rather than the intent of _what_ it should do.
+
+```tsx
+class Search extends React.Component {
+  state = { query: "react", data: [] };
+
+  componentDidMount() {
+    this.fetchData();
+    this.timer = setInterval(() => this.fetchData(), 5000);
+  }
+
+  componentDidUpdate(prev) {
+    if (prev.state.query !== this.state.query) this.fetchData();
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+
+  fetchData() {
+    /* ... */
+  }
+  render() {
+    /* ... */
+  }
+}
+```
+
+The logic is scattered by timing, weakening separation of concerns and making
+the code harder to trace and maintain:
+
+- **Fragmented logic:** `fetchData` is called in three places.
+- **Risk of duplication or omission:** missing cleanup creates a memory leak.
+- **Timing-dependent bugs:** changing `query` while polling can cause a race condition.
+
+With `useEffect`, a function component can keep related logic in one block:
+
+```tsx
+function Search() {
+  const [query] = useState("react");
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    let isStale = false;
+    const fetchData = async () => {
+      const res = await fetch(`/api?query=${query}`);
+      if (!isStale) setData(await res.json());
+    };
+
+    fetchData();
+    const id = setInterval(fetchData, 5000);
+    return () => {
+      isStale = true;
+      clearInterval(id);
+    };
+  }, [query]); // Intent: run this effect again when query changes.
+}
+```
+
+<Table
+  headerRow
+  headerColumn
+  columns={["Perspective", "Class lifecycle", <code>useEffect</code>]}
+  rows={[
+    ["Location of logic", "Split across Mount, Update, and Unmount", "Unified in one block"],
+    ["Declaring dependencies", <>Manual <code>if</code> statements and previous-prop comparisons</>, "Dependency array"],
+    ["Cleanup", <>Separate method (<code>componentWillUnmount</code>)</>, "Returned function"],
+    ["Avoiding race conditions", "Developer responsibility", "Effect scope and closures"],
+    ["Concurrency (React 18)", "Some parts do not receive automatic batching", "Automatically applies and pairs easily with transitions"],
+  ]}
+/>
+
+# 5. Hooks Maximize Composition and Reusability
+
+<SectionHeading title="5.1. Can Logic Be Assembled Like Components?" />
+
+When Hooks arrived in React 16.8, one question came to mind first: “What if
+state-management logic could be moved outside a component?” Custom Hooks made
+that possible by turning logic into reusable modules.
+
+- UI = assembling components
+- Logic = assembling Hooks
+
+<SectionHeading title="5.2. The Complexity of HOCs and Render Props" />
+
+_The JSX of 2017 began with “with with with…”_
+
+Before Hooks, reusing shared logic in classes meant stacking Higher-Order
+Components (HOCs) or Render Props.
+
+```tsx
+export default withError(
+  withRouter(
+    withAuth(UserList) // 1. Authentication
+  ) // 2. Routing information
+); // 3. Error boundary
+```
+
+- **Deeper JSX:** DevTools trees fill with `Wrapper` nodes.
+- **Harder tracing:** the real render node is difficult to find at a glance.
+- **Type propagation problems:** generic props are redefined at every layer.
+
+Render Props have a different shape, but cause the same pain when nested:
+
+```tsx
+<Data>
+  {(data) => (
+    <Theme>
+      {(theme) => (
+        <Auth>{(user) => <Table data={data} theme={theme} user={user} />}</Auth>
+      )}
+    </Theme>
+  )}
+</Data>
+```
+
+<SectionHeading title="5.3. Flattening with Hooks" />
+
+Hooks flatten the tree by clearly separating _logic into Hooks_ and _UI into
+JSX_.
+
+```tsx
+function UserList() {
+  const { user } = useAuth();
+  const { data } = useQuery("users");
+  const theme = useTheme();
+  return <Table data={data} theme={theme} user={user} />;
+}
+```
+
+Hooks hide the question “when and where should I lift this logic?” inside the
+Hook, leaving the component only with “what result should I show?” They also
+accelerated the growth of a module ecosystem: their single-function form lowers
+the barrier to packaging and publishing on npm, while tools such as Storybook
+and CodeSandbox can visualize a Hook's result immediately, making sharing and
+validation much faster.
+
+# 6. Class Components Have No Future
+
+<SectionHeading title="6.1. Technical Debt" />
+
+> Technical debt is the interest paid when a design chosen for today's
+> convenience later collides with new features and performance goals.
+
+The React team pushed function components because the class structure itself
+revealed structural limits when moving to the next stage.
+
+<Table
+  headerRow
+  headerColumn
+  columns={["Area", "Class design", "Obstacle to expansion"]}
+  rows={[
+    ["State storage", <>State lives in the instance (<code>this.state</code>)</>, "Conflicts with concurrency, which pauses and resumes UI work because snapshots cannot be separated"],
+    ["Method binding", <code>this.handle = this.handle.bind(this)</code>, "The same reference remains, so React excludes it from dependencies"],
+    ["Lifecycle", "Split across Mount / Update / Unmount", "Timing logic is split, making automatic batching and priority control difficult"],
+    ["Composition", "No inheritance; HOC / Render Props", "Unlimited composition depth makes compiler and AI analysis harder"],
+  ]}
+/>
+
+In short, classes are designed around object orientation and imperative timing.
+Their timing, binding, and references are intertwined, which does not fit
+React's newer strategies of splitting work into small pieces, interrupting it,
+and assigning priorities.
+
+<SectionHeading title="6.2. Still, Could We Build It with Classes?" />
+
+_1. `startTransition()`—priority-based state updates_
+
+`startTransition` separates work a user should feel immediately from work that
+is expensive but not urgent.
+
+```tsx
+const handleType = (value) => {
+  setInput(value);
+  startTransition(() => {
+    setFiltered(filter(value));
+  });
+};
+```
+
+The transition queue stores snapshots of units of work and resumes them when
+the browser has time. With classes, we would need to tag each `setState` call
+with priority, manage the batching queue ourselves, and add guards in several
+places so `this.state` does not change halfway through.
+
+```tsx
+class SearchBox extends React.Component {
+  state = { input: "", filtered: [] };
+
+  handleType = (value) => {
+    this.setState({ input: value });
+    startTransition(() => {
+      unstable_batchedUpdates(() => {
+        this.setState({ filtered: expensiveFilter(value) });
+      });
+    });
+  };
+
+  render() {
+    return (
+      <input
+        value={this.state.input}
+        onChange={(event) => this.handleType(event.target.value)}
+      />
+    );
+  }
+}
+```
+
+It is possible, but it requires low-level APIs such as
+`unstable_batchedUpdates`, preserving `this` binding, and manual queue
+synchronization. The code grows, and it must be adjusted again when React
+versions change.
+
+_2. Suspense for data—the fit with the throw-Promise pattern_
+
+Function components and Hooks can naturally use the pattern “throw a Promise
+during rendering, then replace it with loading UI at a Suspense boundary.”
+
+```tsx
+function fetchPost(id) {
+  return fetch(`/api/post/${id}`).then((r) => r.json());
+}
+
+function Post({ id }) {
+  const post = use(fetchPost(id));
+  return <article>{post.title}</article>;
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <Post id={1} />
+    </Suspense>
+  );
+}
+```
+
+With a class, the corresponding code is spread across methods:
+
+```tsx
+class Post extends React.Component {
+  state = { status: "loading", post: null, error: null };
+
+  componentDidMount() {
+    fetch(`/api/post/${this.props.id}`)
+      .then((response) => response.json())
+      .then((post) => this.setState({ status: "success", post }))
+      .catch((error) => this.setState({ status: "error", error }));
+  }
+
+  componentDidCatch(error) {
+    this.setState({ status: "error", error });
+  }
+
+  render() {
+    const { status, post, error } = this.state;
+    if (status === "loading") return <Spinner />;
+    if (status === "error") return <ErrorView err={error} />;
+    return <article>{post.title}</article>;
+  }
+}
+
+export default function Page() {
+  return (
+    <ErrorBoundary>
+      <Post id={1} />
+    </ErrorBoundary>
+  );
+}
+```
+
+Fetching moves into `componentDidMount`, error handling into
+`componentDidCatch`, and local state must switch among loading, error, and
+success. The logic is spread across methods, and when Suspense and an Error
+Boundary overlap, render order needs separate adjustment. There is no
+“best practice” exclusively for classes.
+
+<SectionHeading title="6.3. Server Components and Streaming SSR: Synergy with Functions" />
+
+_1. They must be serializable._ Server Components are transformed at compile
+time into pure functions without dependencies, and their result—the React
+Element tree—is serialized and sent as a JSON stream. Props and internal state
+must be serializable and side-effect free. Class methods, getters, and private
+fields cannot be serialized or lose their meaning, leaving the compiler unable
+to guarantee safety.
+
+_2. Re-entry must be safe._ Streaming SSR sends HTML chunks, then continues
+when data or CPU becomes available. The Fiber Scheduler stores snapshots of the
+work stack.
+
+<Table
+  headerRow
+  headerColumn
+  columns={["Requirement", "Function component", "Class component"]}
+  rows={[
+    ["Render consistency", "Closure fixes the state snapshot", "Instance state can change"],
+    ["Recovery after interruption", "Recalling a pure function yields the same result", "Side-effect locations must be tracked"],
+    ["Partial hydration", "Each chunk is independent", "Lifecycle order is difficult to align"],
+  ]}
+/>
+
+In the end, class code either returns to an approach that streams only after a
+whole page is complete, or is isolated for client-side use. It cannot fully
+benefit from the faster LCP and INP offered by Streaming SSR.
+
+<SectionHeading title="6.4. Conclusion: When Weighing Costs and Benefits, Choose Functions" />
+
+- Concurrent Renderer, Server Components, and the Compiler are designed around functional assumptions.
+- The cost in people, performance, and quality of building class-only workarounds rises quickly.
+- Libraries, tools, and learning materials continue to accumulate around function components as the default.
+
+So “class components have no future” does not mean they are impossible. It
+means they carry a structural debt: every new feature requires another
+compatibility workaround. There are only two choices:
+
+1. Maintain the older design while absorbing an ever-growing compatibility layer.
+2. Pay the one-time migration cost and move to a codebase where future features are the default.
+
+Because the cost of building a “class compatibility adapter” for every new
+feature is more expensive than the initial investment in function components,
+the React community and most companies have already chosen the second path.

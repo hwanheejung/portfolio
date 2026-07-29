@@ -1,0 +1,443 @@
+---
+title: A History of React Rendering Strategies
+description: Tracing React's rendering evolution from CSR to SSR, Streaming SSR, Selective Hydration, and React Server Components.
+slug: react-rendering-strategies
+date: 2025-05-30
+draft: false
+kind: technical-article
+topics:
+  - react
+spotlightIn: {}
+related: ["why-setstate-is-asynchronous", "why-react-left-class-components"]
+thumbnail: "./images/thumbnail-editorial.png"
+---
+
+<Callout title="Presentation note" backgroundColor="green" emoji="🎙️">
+  Presented for the NAVER Cloud frontend study on May 30, 2025 <br /> updated
+  March 11, 2026.
+</Callout>
+
+# Why I Chose This Topic
+
+- I think understanding how React has evolved helps us design better code and structure with a tool we use every day.
+- I want to see React 19 not as a feature update, but within the larger picture of _the future of the web as React sees it_.
+- I want to think together about the path React has taken and where it wants to go, and discuss whether we agree with that direction.
+- CSR, SSR, and RSC are familiar interview topics, but I have not studied them deeply. I hope this can connect concepts I knew into a single flow.
+
+# 1. Client-Side Rendering (CSR)
+
+Web applications originally followed a model where the server generated HTML
+and the browser displayed it. As applications became more complex, regenerating
+an entire page on the server created problems:
+
+- Even a small UI change required rendering the entire page again.
+- More user interactions meant more round trips to the server.
+- Keeping state on the client was difficult.
+
+CSR emerged from a different idea: _calculate UI on the client, not the
+server._
+
+<SectionHeading title="How It Works" />
+
+> CSR is a method where the browser receives empty HTML such as
+> `<div id="root"></div>` and dynamically builds the whole UI through a
+> JavaScript bundle.
+
+<Figure
+  src="./images/csr-flow.png"
+  alt="Diagram of the client-side rendering flow from browser request to JavaScript execution and completed UI."
+  caption="CSR builds the page in the browser after the JavaScript bundle arrives."
+  width={1056}
+  height={672}
+/>
+
+1. The browser sends a request: `GET /`.
+2. The server sends a simple HTML file and JavaScript file containing only the
+   minimum structure (TTFB).
+
+```html
+<html>
+  <body>
+    <div id="root"></div>
+    <script src="/main.js"></script>
+  </body>
+</html>
+```
+
+3. The browser downloads and renders HTML and CSS, creating the initial page
+   structure. At this point, users see a blank page.
+4. It downloads and executes JavaScript through the `<script>` tag. React and
+   other libraries run, and the UI is created. The entire application is inside
+   the JavaScript bundle.
+5. JavaScript adds behavior to the HTML received from the server, making the
+   page interactive.
+6. The client calls APIs to fetch the data it needs.
+7. The UI is completed from that data; this is when LCP is measured.
+
+<SectionHeading title="The Problems with CSR" />
+
+_1. Initial loading speed_
+
+```text
+HTML download
+    ↓
+JS download
+    ↓
+JS parse
+    ↓
+JS execute
+    ↓
+React render
+    ↓
+Data fetch
+    ↓
+UI render
+```
+
+Only after HTML and CSS render can JavaScript be downloaded, parsed, and
+executed; only then does the page become interactive. The problem is that every
+step must happen in sequence: it is slow, and the user experience suffers.
+
+_2. JavaScript bundle size_
+
+CSR sends the whole application to the client. As features grow, so does the
+JavaScript bundle, and the browser needs more time to process it—especially on
+mobile.
+
+_3. SEO_
+
+Search engines primarily index the server-provided HTML, such as
+`<div id="root"></div>`, which makes CSR content difficult to analyze. Without
+a `<noscript>` tag, a CSR application can provide only an empty DOM structure.
+Even though Googlebot can execute JavaScript, a limited crawl budget makes it
+hard to collect all content from a complex SPA.
+
+> Do we have to calculate all UI on the client?
+
+> What if the server calculated the initial UI in advance?
+
+# 2. Server-Side Rendering (SSR)
+
+> SSR renders the page on the server and sends the browser complete HTML.
+
+<Figure
+  src="./images/ssr-flow.png"
+  alt="Diagram of the server-side rendering flow, from request through server rendering to hydration in the browser."
+  caption="SSR sends completed HTML first, then hydrates it in the browser."
+  width={1244}
+  height={614}
+/>
+
+1. The browser requests `GET /` from the server.
+2. The server generates HTML: fetch data → create the component tree → create
+   HTML.
+3. It sends completed HTML, already containing content, to the browser.
+4. The browser downloads the JavaScript bundle: React runtime, application
+   code, event handlers, and state logic.
+5. When JavaScript runs, it hydrates the generated HTML.
+
+Hydration connects JavaScript behavior to static HTML generated on the server
+so that it becomes interactive. It creates a virtual DOM, compares it with the
+server HTML, connects event handlers, and initializes application state.
+
+<SectionHeading title="How SSR Solves CSR's Problems" />
+
+1. **SEO:** Because the server provides full HTML, crawlers can index content
+   more easily.
+2. **User experience:** Unlike CSR, where users see a blank screen until
+   JavaScript runs, SSR can show a completed page beforehand—though it is not
+   interactive yet.
+
+<SectionHeading title="Why React Does Not Simply Use the Server HTML" />
+
+If the server already made the HTML, why does React not use it as-is? The
+answer is the hydration invariant: React must ensure that server DOM equals the
+client render output. If the HTML generated on the server and the result React
+renders again on the client differ, there is a hydration mismatch.
+
+When they differ, React cannot know which DOM is correct. During hydration, it
+does not simply trust the HTML: it rebuilds the component tree. This is why SSR
+still needs significant client computation.
+
+<SectionHeading title="SSR Before React 18: An All-or-Nothing Waterfall" />
+
+SSR improved initial loading, but pre-React 18 SSR had structural problems.
+
+_1. The server had to fetch all required data before it could start rendering
+HTML._
+
+For a page that shows data from a database or another API, the server had to
+produce complete HTML containing all that data: fetch required data → render
+components from it → return complete HTML. The process was synchronous: one
+step could not continue until the previous step finished.
+
+_2. All JavaScript had to be loaded before hydration could begin._
+
+React did not hydrate a component tree in stages; it processed the whole tree
+at once. If JavaScript logic was not ready for any part of the page, hydration
+could not proceed. Since it ran to completion once started, everything had to
+be ready first.
+
+_3. Every hydration task had to finish before components became interactive._
+
+Once hydration began, React worked through the whole tree sequentially. It
+could not pause midway or handle one component first. Hydration used major JavaScript
+resources and blocked other JavaScript work, so users could not interact with
+the application until it finished.
+
+_The core problem was hydrating the entire component tree at once._ If one part
+of an application rendered more slowly than another, this was very inefficient.
+The React team considered rendering selected parts first and processing the
+rest asynchronously. That led to Suspense.
+
+# 3. React 18: Streaming SSR and Selective Hydration
+
+Pre-React 18 SSR solved CSR's blank-screen problem fairly well. Because the
+server sent complete HTML first, users could see page structure and content
+earlier, and SEO was much better.
+
+_But showing HTML quickly and making UI interactive quickly are entirely
+different problems._ Pre-React 18 SSR improved the speed of what users could
+see, but still had a structural bottleneck in the speed at which UI came alive.
+Streaming SSR and Selective Hydration turn these three bottlenecks from one
+large waterfall into smaller independent units.
+
+<SectionHeading title="The Core Shift: A Page Is Many Units, Not One" />
+
+Traditional SSR treated a page as one huge finished product. React 18 began to
+see a page as a collection of regions with different readiness speeds and
+priorities. The central idea that enables this shift is the _Suspense boundary_.
+
+Suspense is often understood only as a way to show loading UI. In the context
+of React 18 server rendering, it matters much more: it is a structural boundary
+that can split server rendering and hydration. A boundary lets React treat
+parts of a component tree as independent units.
+
+- Some parts can be shown right now.
+- Some parts do not have data or code ready yet.
+- Show ready parts first.
+- Attach the rest naturally when it is ready.
+
+This is the starting point of Streaming SSR.
+
+<SectionHeading title="Streaming SSR: Send Ready HTML First" />
+
+In traditional SSR, it was difficult for the server to begin responding before
+the whole HTML document was finished. React 18 introduced streaming server
+rendering. `renderToPipeableStream` sends HTML in chunks and sends ready parts
+in sequence.
+
+```tsx
+import { renderToPipeableStream } from "react-dom/server";
+
+const { pipe } = renderToPipeableStream(<App />, {
+  bootstrapScripts: ["/main.js"],
+  onShellReady() {
+    response.setHeader("content-type", "text/html");
+    pipe(response);
+  },
+});
+```
+
+<Figure
+  src="./images/streaming-ssr-flow.png"
+  alt="Page diagram showing a ready shell and a slower main content area that can stream later."
+  caption="Streaming SSR can send the ready shell before slower content is available."
+  width={1036}
+  height={772}
+/>
+
+The server can send the _shell_—the initial skeleton that helps a user
+understand the page—before everything is ready. `onShellReady` and
+`onAllReady` support this flow.
+
+```text
+Header / Sidebar / Footer are ready
+→ Send the shell first
+→ Reserve MainContent with a fallback
+→ Send additional HTML when MainContent is ready
+```
+
+Streaming SSR does not completely eliminate waterfalls in server rendering,
+but it breaks them into smaller waterfalls. Users see page structure and
+context rather than a state where nothing appears.
+
+<SectionHeading title="Streaming SSR Was Not Enough" />
+
+> Is showing HTML first enough?
+
+What users want is not only a visible page but a page they can click and type
+in. Streaming SSR reduces the server-response bottleneck, but major client-side
+problems remain:
+
+- JavaScript still has to download.
+- React still has to hydrate.
+- The point at which the whole page becomes interactive can still be late.
+
+So Streaming SSR improves the speed of what users _see_, but does not
+automatically solve the speed of becoming _interactive_. The other axis React
+18 added is Selective Hydration.
+
+<SectionHeading title="Selective Hydration: Split the Order of Interactivity Too" />
+
+Selective Hydration hydrates initial HTML in chunks, so one part of a page can
+become interactive even while another part's code or data is not ready. Because
+Suspense boundaries divide the tree into independent units, hydration can be
+scheduled by importance.
+
+Imagine a search input at the top of a page and a heavy recommendation list at
+the bottom. In older SSR, a slow recommendation list or delayed code could also
+delay the search input becoming interactive. With Selective Hydration, the
+important input can hydrate first and the less important area later.
+
+```tsx
+<Layout>
+  <Header />
+  <Sidenav />
+  <Suspense fallback={<Spinner />}>
+    <MainContent />
+  </Suspense>
+  <Footer />
+</Layout>
+```
+
+What matters is that Suspense is not merely “show a spinner while loading.” It
+acts as a hydration scheduling boundary:
+
+- This part can be handled independently.
+- UI outside this boundary can appear and come alive first.
+- Content inside the boundary can continue later once it is ready.
+
+Suspense is therefore a structural split point for rendering and hydration.
+
+<SectionHeading title="Why Streaming SSR and Selective Hydration Matter Together" />
+
+Individually, these features can look like partial optimizations. Together,
+they are one strategy for splitting both the server and client stages.
+
+**Streaming SSR solves:**
+
+- Not waiting for all HTML on the server to be ready.
+- Showing ready UI structure first.
+
+**Selective Hydration solves:**
+
+- Not waiting for the whole tree on the client to come alive.
+- Activating important interactions first.
+
+React 18 changed server rendering from simply “making HTML on the server” into
+an architecture that becomes visible progressively and interactive
+progressively.
+
+<SectionHeading title="Problems That Still Remained" />
+
+Streaming SSR and Selective Hydration were major improvements, but costs
+remained.
+
+1. **The JavaScript bundle that the client must download is still the same.**
+   HTML can be sent asynchronously through streaming, but the browser must
+   ultimately download the whole page's JavaScript. Does it have to?
+2. **There is still a cost to hydrate components that are not interactive.**
+   Not every UI needs the same level of client execution. Hydrating even static
+   components seems like unnecessary resource use. Is there a way to avoid it?
+
+# 4. RSC (React Server Components)
+
+Streaming SSR and Selective Hydration made React server rendering much more
+progressive. React could show ready parts before the whole HTML document was
+finished, and make important parts interactive before the whole tree was ready.
+
+But React 18 succeeded at splitting hydration into smaller pieces without
+greatly reducing the total number of components that needed hydration. Read-only
+Markdown, static content, data-heavy UI, and components that depend on
+server-only data still went into the client bundle and became hydration
+candidates. This is where RSC begins.
+
+<SectionHeading title="The Core RSC Idea: Not “Hydrate in Pieces,” but “Do Not Send It”" />
+
+Server Components are a new kind of component rendered in an environment
+separate from the client application or SSR server, before bundling. “Server”
+does not necessarily mean a web server at request time: it can be a CI build
+environment or a per-request server. The essence of RSC is not “make HTML on a
+server,” but _run components outside the client bundle_.
+
+> Do not send every component to the client. Keep components that only need to
+> run on the server there.
+
+<SectionHeading title="React Server Component Payload" />
+
+- The payload contains rendered Server Component output, placeholders showing
+  where Client Components belong, references to their JavaScript files, and
+  props information.
+- RSC is an architecture that uses HTML and an RSC Payload together.
+- On initial load, HTML is a fast non-interactive preview; the RSC Payload then
+  reconciles the server/client tree, and JavaScript for Client Components
+  hydrates last.
+
+<SectionHeading title="Zero Client JavaScript for That Component" />
+
+_That component can have zero client JavaScript._
+
+```tsx
+export default async function Post({ id }) {
+  const post = await db.post.findUnique({ where: { id } });
+  return <Article markdown={post.body} />;
+}
+```
+
+- Database access does not enter the client bundle.
+- Heavy work such as Markdown parsing does not go to the client.
+- The component itself is not a hydration target.
+
+<SectionHeading title="Hybrid Rendering" />
+
+Earlier approaches forced every component through hydration. With RSC, only
+components needing interaction add `"use client"` and hydrate selectively.
+Static content that needs no interaction does not go through hydration, so
+resources are not wasted.
+
+<SectionHeading title="Data Fetching: Reduce the API Boundary" />
+
+- Data can be fetched directly on the server, reducing server-client round
+  trips.
+- Sensitive data stays on the server and is not exposed to the client.
+- In the App Router, an async Server Component can directly access a database
+  or file system without a separate API endpoint.
+
+<SectionHeading title="Rendering Pipeline" />
+
+1. **Render Server Components on the server.** React executes the Server
+   Component tree and creates the special RSC Payload. Individual chunks can be
+   split by route segment and Suspense boundary.
+2. **Generate HTML using the RSC Payload and Client Component instructions.**
+   Initial HTML remains important, but it reflects RSC output and Client
+   Component references rather than only SSR output.
+3. **Use HTML first for a fast, non-interactive preview.** This connects to SSR
+   and Streaming SSR.
+4. **Use the RSC Payload to reconcile the server/client component tree.** The
+   payload updates the DOM and identifies where Client Components belong and
+   what references they need.
+5. **Hydrate Client Component JavaScript last.** Hydration does not disappear;
+   it remains only for Client Components.
+
+# Thoughts
+
+- React keeps offering increasingly sophisticated tools and strategies for
+  maximizing performance.
+- CSR → SSR → Streaming SSR → RSC are choices for faster, more efficient UX.
+- But the technology becomes more complex too, and fully following the React
+  team's context may itself become a development resource.
+- In the paradox that “the code becomes more complex, but users get a simpler
+  experience,” we need the ability to manage that complexity.
+- Rather than adopting things blindly, it seems better to consider trade-offs
+  and choose according to the situation.
+
+<SectionHeading title="Thoughts on React 19" />
+
+- Since moving away from class components, React has continued to pursue more
+  declarative and abstracted patterns—for example,
+  [`useActionState`](https://ko.react.dev/blog/2024/12/05/react-19#new-hook-useactionstate),
+  [`useFormStatus`](https://ko.react.dev/blog/2024/12/05/react-19#new-hook-useformstatus),
+  and [`useOptimistic`](https://ko.react.dev/blog/2024/12/05/react-19#new-hook-optimistic-updates).
+- It may become a competitive advantage not merely to use React's built-in
+  features, but to make them our own and explain them in our own context.

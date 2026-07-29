@@ -41,6 +41,7 @@ const ALLOWED_MDX_COMPONENTS = new Set([
   "Numbering",
   "PointGrid",
   "SectionHeading",
+  "Table",
 ]);
 
 export class ContentCompilationError extends Error {

@@ -8,6 +8,7 @@ import { Metric } from "@/components/mdx/metric";
 import { Numbering } from "@/components/mdx/numbering";
 import { PointGrid } from "@/components/mdx/point-grid";
 import { SectionHeading } from "@/components/mdx/section-heading";
+import { Table } from "@/components/mdx/table";
 
 type CalloutBackground = NonNullable<
   ComponentProps<typeof Callout>["backgroundColor"]
@@ -209,6 +210,57 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
         </Columns>
       );
     },
+  },
+  {
+    name: "Table",
+    description:
+      "Present a compact comparison or reference table with optional header treatments.",
+    fields: [
+      {
+        key: "headerRow",
+        label: "Header row background",
+        type: "select",
+        initialValue: "yes",
+        options: [
+          { label: "Yes", value: "yes" },
+          { label: "No", value: "no" },
+        ],
+      },
+      {
+        key: "headerColumn",
+        label: "First column background",
+        type: "select",
+        initialValue: "yes",
+        options: [
+          { label: "Yes", value: "yes" },
+          { label: "No", value: "no" },
+        ],
+      },
+    ],
+    createSnippet: (values) => {
+      const headerRow = values.headerRow === "yes" ? "\n  headerRow" : "";
+      const headerColumn =
+        values.headerColumn === "yes" ? "\n  headerColumn" : "";
+
+      return `<Table${headerRow}${headerColumn}
+  columns={["Item", "Before", "After"]}
+  rows={[
+    ["State", "Mutable", "Immutable"],
+    ["Rendering", "All at once", "In smaller units"],
+  ]}
+/>`;
+    },
+    renderPreview: (values) => (
+      <Table
+        columns={["Item", "Before", "After"]}
+        headerColumn={values.headerColumn === "yes"}
+        headerRow={values.headerRow === "yes"}
+        rows={[
+          ["State", "Mutable", "Immutable"],
+          ["Rendering", "All at once", "In smaller units"],
+        ]}
+      />
+    ),
   },
   {
     name: "Numbering",
