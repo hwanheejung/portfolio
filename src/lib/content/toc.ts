@@ -21,7 +21,7 @@ export function extractArticleToc(body: string): ArticleTocItem[] {
     )
     .replace(/`[^`\n]+`/g, "");
   const matches = proseOnly.matchAll(
-    /^(#{1,3})\s+(.+?)\s*$|<SectionHeading\s+[^>]*title=(?:"([^"]+)"|'([^']+)')[^>]*\/>/gm
+    /^(#{1,2})\s+(.+?)\s*$|<SectionHeading\s+[^>]*title=(?:"([^"]+)"|'([^']+)')[^>]*\/>/gm
   );
 
   for (const match of matches) {
@@ -35,7 +35,7 @@ export function extractArticleToc(body: string): ArticleTocItem[] {
     headings.push({
       id: createHeadingId(title),
       level: markdownLevel
-        ? (Math.min(markdownLevel, 3) as 1 | 2 | 3)
+        ? (Math.min(markdownLevel, 2) as 1 | 2)
         : 2,
       title,
     });

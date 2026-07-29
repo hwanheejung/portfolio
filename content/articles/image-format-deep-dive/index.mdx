@@ -1,0 +1,621 @@
+---
+title: Image Format Deep Dive
+description: A step-by-step look at how JPEG, PNG, and WebP compress images—and why their tradeoffs matter on the web.
+slug: image-format-deep-dive
+date: 2025-09-19
+draft: false
+kind: technical-article
+topics:
+  - web-performance
+spotlightIn: {}
+related: ["react-rendering-strategies", "when-do-effects-run"]
+thumbnail: "./images/thumbnail-editorial.png"
+---
+
+<Callout title="Presentation note" backgroundColor="green" emoji="🎙️">
+  Presented for the NAVER Cloud frontend study on September 19, 2025.
+</Callout>
+
+# Why I Chose This Topic
+
+- When exporting assets from Figma and similar tools, we have to choose an image
+  format. Without understanding how compression works, however, it is difficult
+  to make the best choice.
+- Modern formats such as WebP and AVIF are not simply “smaller.” They differ in
+  features such as _transparency, animation, and lossless or lossy
+  compression_.
+- Next/Image automatically provides AVIF → WebP → original-format conversion.
+  Let’s understand the background behind that behavior.
+
+# JPEG: Lossy Compression
+
+- JPEG takes advantage of the fact that human vision is imperfect.
+- It compresses an image by removing information that we are unlikely to
+  notice.
+
+<SectionHeading title="Step 1: Convert RGB to YCbCr" />
+  <Columns>
+    <Column>
+      - Our eyes are more sensitive to luminance (Y) than to differences in
+        color, or chrominance (Cb and Cr).
+
+      <Figure
+        src="./images/source-01.png"
+        alt="A comparison of rods and cones in the human eye"
+      />
+
+      - Rods detect brightness (1 billion) \>\> cones detect color (6 million).
+      - To remove color information, we first need to *separate brightness
+        from color information*. This is why RGB is converted to YCbCr.
+        - *Y (luminance):* Brightness information—the component used by
+          black-and-white television.
+        - *Cb (chrominance-blue):* The difference between the blue channel
+          and luminance Y.
+        - *Cr (chrominance-red):* The difference between the red channel and
+          luminance Y.
+      - The green component can be obtained automatically by subtracting red
+        and blue from Y, because Y is calculated as a weighted sum of RGB.
+    </Column>
+    <Column>
+      <Figure
+        src="./images/source-02.png"
+        alt="RGB-to-YCbCr conversion and the separate Y, Cb, and Cr channels"
+      />
+    </Column>
+
+  </Columns>
+
+{" "}
+
+<Callout title="Result" backgroundColor="gray">
+  1. The image now has a structure in which the resolution of color information
+  can be reduced while the image still looks natural. 2. Keeping only the Y
+  component also produces a grayscale image.
+</Callout>
+
+<SectionHeading title="Step 2: Reduce chrominance data through downsampling" />
+
+- *Luminance (Y) keeps the original resolution*, while the resolution of
+  *chrominance (Cb and Cr) is reduced*.
+- The method used to reduce chrominance information is written as *4:x:y*.
+  - *Reference unit:* A block that is four pixels wide and two rows high, for a
+    total of eight pixels.
+  - `4` → The number of horizontal pixels in the reference block. It is always
+    four.
+  - `x` → The number of chrominance samples in the *first row*.
+  - `y` → The number of chrominance samples in the *second row*.
+
+{" "}
+
+<Figure
+  src="./images/source-03.png"
+  alt="The reference block used by 4:x:y chroma subsampling notation"
+/>
+
+  <Columns>
+    <Column>
+      *4:2:2* means that two pixels are sampled in the first row and two
+      pixels are sampled in the second row.
+
+      <Figure
+        src="./images/source-04.png"
+        alt="A diagram of 4:2:2 chroma subsampling"
+      />
+    </Column>
+    <Column>
+      *4:2:0* means that two pixels are sampled in the first row and none are
+      sampled in the second row.
+
+      <Figure
+        src="./images/source-05.png"
+        alt="A diagram of 4:2:0 chroma subsampling"
+      />
+    </Column>
+
+  </Columns>
+
+Add the luminance information:
+
+{" "}
+
+<Figure
+  src="./images/source-06.png"
+  alt="The luminance channel added to the subsampled chrominance channels"
+/>
+
+JPEG usually uses _4:2:0_.
+
+- For a 16×16-pixel block:
+  - Y remains 16×16.
+  - Both the width and height of Cb and Cr are halved, producing 8×8 blocks.
+
+{" "}
+
+<Callout title="Result" backgroundColor="gray">
+  The amount of chrominance data in Cb and Cr has now been reduced relative to
+  luminance Y.
+</Callout>
+
+<SectionHeading title="Step 3: Rearrange information so it is easier to discard → Discrete Cosine Transform (DCT)" />
+- The data needs to be transformed into a form in which *unnecessary information
+can be removed easily*. In other words, it needs to be transformed into the frequency
+domain.
+
+### An image is the sum of many frequencies
+
+- Just as we fill in the background color before gradually adding finer
+  details when painting an image:
+
+<Columns>
+  <Column>
+    <Figure
+      src="./images/source-07.png"
+      alt="A low-frequency representation of an image"
+    />
+
+    → *Low-frequency components represent large structures such as the
+    background or sky.*
+
+  </Column>
+  <Column>
+    <Figure
+      src="./images/source-08.png"
+      alt="A high-frequency representation of an image"
+    />
+
+    → *High-frequency components represent edges and small details.*
+
+  </Column>
+</Columns>
+
+- _A complex image signal can be represented as the sum of cosine waves
+  with different frequencies._
+
+<Figure
+  src="./images/source-09.png"
+  alt="An image signal represented as a combination of cosine waves"
+/>
+
+_In other words, an image is the result of many frequency components
+mixed together, and DCT is the process of separating them into individual
+frequency components._
+
+### The DCT process
+
+- Split each of the Y, Cb, and Cr channels in the original image into 8×8
+  blocks, then apply DCT to every block.
+
+<Toggle summary="The transformation process, for anyone curious">
+  ### 1. Original 8×8 block (Y component)
+
+As an example, let’s take a simple block of pixel brightness values from
+0 to 255.
+
+```text
+52 55 61 66 70 61 64 73
+63 59 55 90 109 85 69 72
+62 59 68 113 144 104 66 73
+63 58 71 122 154 106 70 69
+67 61 68 104 126 88 68 70
+79 65 60 70 77 68 58 75
+85 71 64 59 55 61 65 83
+87 79 69 68 65 76 78 94
+```
+
+{" "}
+
+### 2. Level shift (0–255 → -128–127)
+
+_Subtract 128_ from every value.
+
+```text
+-76  -73  -67  -62  -58  -67  -64  -55
+-65  -69  -73  -38  -19  -43  -59  -56
+-66  -69  -60  -15   16  -24  -62  -55
+-65  -70  -57   -6   26  -22  -58  -59
+-61  -67  -60  -24   -2  -40  -60  -58
+-49  -63  -68  -58  -51  -60  -70  -53
+-43  -57  -64  -69  -73  -67  -63  -45
+-41  -49  -59  -60  -63  -52  -50  -34
+```
+
+{" "}
+
+### 3. The 2D DCT formula
+
+The 2D DCT is defined as follows:
+
+{" "}
+
+<Figure
+  src="./images/source-10.png"
+  alt="The formula for the two-dimensional discrete cosine transform"
+/>
+
+{" "}
+
+### 4. The actual calculation: a DC component example
+
+{" "}
+
+<Figure
+  src="./images/source-11.png"
+  alt="An example calculation of the DC component"
+/>
+
+`F(0, 0) = -415`
+
+</Toggle>
+
+<Columns>
+  <Column>
+    *Original 8×8 block*
+
+    ```text
+    52 55 61 66 70 61 64 73
+    63 59 55 90 109 85 69 72
+    62 59 68 113 144 104 66 73
+    63 58 71 122 154 106 70 69
+    67 61 68 104 126 88 68 70
+    79 65 60 70 77 68 58 75
+    85 71 64 59 55 61 65 83
+    87 79 69 68 65 76 78 94
+    ```
+
+  </Column>
+  <Column>
+    *After DCT*
+
+    ```text
+    -415 -33 -58  35  58 -51 -15 -12
+        5 -34  49  18  27   1  -5   3
+      -46  14  80 -35 -50  19   7 -18
+      -53  21  34 -20   2  34  36  12
+        9 -2  -20  28  20 -11 -15  -7
+      15 -11 -17  14   9  10  -1  -7
+      -12  -1   9   7  -1   0   0   4
+      -1   1  -6   4   3  -1  -1   0
+    ```
+
+    ✅ *Large values are placed in the upper-left corner, where the
+    low-frequency components are.*
+
+    ✅ *The lower-right corner, where the high-frequency components are,
+    contains many small values or values close to zero.*
+
+  </Column>
+</Columns>
+
+Because removing high-frequency components makes _almost no perceptible
+difference to the human eye_, removing them can _reduce the file size
+while preserving image quality_.
+
+<SectionHeading title="Step 4: Discard the details → Quantization" />
+  <Columns>
+    <Column>
+      <Figure
+        src="./images/source-12.png"
+        alt="The standard JPEG quantization table"
+      />
+    </Column>
+    <Column>
+      - In a quantization table, larger numbers produce greater loss.
+      - Low-frequency components in the upper-left corner receive small values
+        to preserve precision. High-frequency components in the lower-right
+        corner receive large values to induce loss.
+      - Divide every frequency component by the corresponding value in the
+        *quantization matrix*, then round the result.
+
+      <Toggle summary="Rounding means that fractional information cannot be recovered during restoration → lossy compression">
+        1. Original value: 19.7
+        2. Apply quantization: `round(18.7 / 10) = round(1.87) = 2`
+        3. Inverse quantization: `2 × 10 = 20`
+        4. Restored value: 20, which differs from the original value of 18.7.
+      </Toggle>
+
+      <Figure
+        src="./images/source-13.png"
+        alt="DCT coefficients after quantization"
+      />
+    </Column>
+
+  </Columns>
+
+{" "}
+
+<Callout title="Result" backgroundColor="gray">
+  1. *Most high-frequency components become zero, increasing the compression
+  ratio.* 2. *The file becomes smaller without a major loss of image quality.*
+</Callout>
+
+<SectionHeading title="Step 5: Compress the data → Run-Length and Huffman Encoding" />
+This is still not enough. Saving the data as it is would provide poor compression
+efficiency, so JPEG applies the lossless algorithms Run-Length Encoding (RLE) and
+Huffman Encoding to store it more efficiently.
+
+{" "}
+
+### ① Run-Length Encoding (RLE): compress consecutive repetitions of the same value
+
+- Data: `AAAAAABBBBCCCCCCDD`
+- After RLE: `(A,6) (B,4) (C,6) (D,2)`
+
+- An 8×8 block is read in zigzag order:
+  `42, -5, -5, -2, -4, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, …`
+- In many cases, a long sequence of zeros is followed occasionally by a
+  nonzero number. This is represented as `(number of preceding zeros,
+nonzero value)`.
+- Data: `-5, 0, 0, 0, 12, 0, 0, -3, 0, …`
+- After RLE: `(0, -5), (3, 12), (2, -3), …`
+
+{" "}
+
+### ② Huffman Encoding: assign short codes to frequent data and longer codes to less frequent data
+
+- Data: `A A A A B B B C C D`
+- Frequency: `A(4) > B(3) > C(2) > D(1)`
+  - A → `0`
+  - B → `10`
+  - C → `110`
+  - D → `111`
+- The original 40 bits are reduced to 19 bits.
+
+# PNG: Lossless Compression
+
+Unlike JPEG, which converts an image to YCbCr, PNG can store RGBA as it is.
+
+- Three RGB channels + one alpha channel → four channels in total.
+- Opacity from 0 to 255 can be recorded for every pixel.
+
+<Toggle summary="What if we tried to imitate transparency in JPEG?">
+  - We would need a separate mask file—for example, one JPEG plus another
+  grayscale image for transparency. - Alternatively, we would need to wrap them
+  in another container format such as PSD, WebP, or AVIF. - This approach is
+  almost never used on the web, so formats such as PNG, WebP, and AVIF are the
+  default choices.
+</Toggle>
+
+<SectionHeading title="Step 1: Filtering (prediction)" />
+### Delta Encoding: record the differences
+
+- PNG processes an image as _scanlines, one horizontal row at a time_.
+- Pixel values, or colors, within a row are often similar to adjacent values.
+  PNG therefore creates a prediction based on the pixel to the left, above,
+  or diagonally above, then records _the difference between the prediction
+  and the actual value_.
+- This turns _large absolute values into small differences and creates many
+  repeated values such as zero, maximizing compression efficiency_.
+- In other words, PNG filtering is a form of _Delta Encoding_. It converts
+  data into “amounts of change” so that the data can be compressed more
+  effectively.
+
+Filtering itself does not make the data smaller. It is a reversible
+preprocessing step that makes neighboring bytes more predictable, giving
+the following DEFLATE stage more repeated and low-magnitude values to
+compress. The decoder reverses the selected filter after decompression, so no
+pixel information is lost.
+
+> `[2,3,4,5,6,7,8] → [2,1,1,1,1,1,1]`
+
+{" "}
+
+### The five filtering modes
+
+- PNG can choose one of five filters for each scanline, depending on the
+  situation.
+
+  1. _None (0):_ No filter; keep the original values. Suitable for palette
+     images and grayscale images below 8 bits.
+  2. _Sub (1):_ `X - A`, or the current pixel minus the pixel to its left.
+  3. _Up (2):_ `X - B`, or the current pixel minus the pixel above it.
+  4. _Average (3):_ `X - floor((A + B) / 2)`, or the current pixel minus the
+     average of the pixels to its left and above.
+  5. _Paeth (4):_ `X - Paeth(A,B,C)`, choosing the closest value among the
+     pixel to the left (A), above (B), and diagonally above-left (C).
+
+<Callout title="Would one filter per scanline sometimes be worse?" backgroundColor="gray" emoji="🤔">
+
+If the same filtering method is used across an entire scanline, would that
+not be disadvantageous for:
+
+- an image with a densely concentrated single color, or
+- an image with many vertical patterns?
+
+</Callout>
+
+- The encoder—the side performing compression—tries all five filters on
+  every scanline.
+  - It compares the _Sum of Absolute Differences (SAD)_ between the
+    residual values,
+  - or the _actual size after applying DEFLATE_,
+  - then chooses the smallest result.
+- In other words, it automatically selects the mode that compresses each row
+  most effectively.
+
+{" "}
+
+<Callout
+  title="Which filter tends to work best?"
+  backgroundColor="gray"
+  emoji="👌"
+>
+  - *Little horizontal variation*, such as a horizontal gradient or repeated
+  color → `Sub` is advantageous because it uses the left pixel. - *Little
+  vertical variation*, such as vertical stripes or a vertical text region → `Up`
+  is advantageous because it uses the pixel above. - *Many diagonals or
+  patterns* → `Paeth` is advantageous because it predicts from the closest of A,
+  B, and C. - *A single color or palette-based image* → `None` is advantageous
+  because filtering provides no benefit. - *A complex mixed region* → `Average`
+  may be efficient because it finds a middle point.
+</Callout>
+
+<SectionHeading title="Step 2: DEFLATE → LZ77 + Huffman Coding" />
+### LZ77 compression
+
+- Filtered data consists of differences, so it contains many small values,
+  especially zero.
+  - For example, when the background is the same color, the difference
+    remains zero.
+- A long sequence of zeros is compressed into `(distance, length)`.
+- In other words, LZ77 finds a _repeating string, or pattern_, in the data
+  and represents it as `(distance, length)`.
+- Example: `AAAAABBBBCCCC` → `("A"×5), ("B"×4), ("C"×4)`
+
+→ It reduces the size by referring back to a pattern that already appeared
+instead of writing the duplicate again.
+
+{" "}
+
+### Huffman Coding
+
+LZ77 reduces repeated byte sequences, but its output still contains literal
+bytes and length–distance symbols. Huffman coding assigns shorter bit
+patterns to symbols that occur frequently and longer bit patterns to rarer
+ones. DEFLATE combines the two stages: LZ77 first describes repetition, then
+Huffman coding stores those descriptions efficiently.
+
+_The important distinction is that both stages are lossless._ Filtering,
+LZ77, and Huffman coding can all be reversed exactly, which is why the
+original PNG pixel values are recovered without alteration.
+
+<SectionHeading title="PNG file structure: chunks" />
+
+- A PNG file does not contain only compressed image data. It is made up of
+  _multiple chunks_.
+- Every chunk consists of a _type + length + data_.
+- In other words, PNG is an _extensible format_ that can store pixel data
+  together with various kinds of metadata.
+- This can create a problem with unnecessary chunks.
+  - When a tool such as Photoshop saves a PNG, it may automatically include
+    unnecessary metadata such as “this file was created in Photoshop.”
+  - These chunks are unrelated to the actual _pixel data_, but they can
+    substantially increase the file size.
+  - “Export for web” → remove unnecessary chunks → a much smaller file.
+- _Removing unnecessary chunks is essential when optimizing PNG files_, with
+  tools such as `pngcrush`, `optipng`, and `ImageOptim`.
+
+The critical chunks explain the minimum shape of a PNG file: `IHDR` stores
+basic image information, one or more `IDAT` chunks carry the compressed
+datastream, and `IEND` marks the end. Optional ancillary chunks can carry
+information such as color profiles, text, and timestamps. Removing optional
+metadata may reduce file size, but removing data required for correct color or
+transparency interpretation can change how the image is displayed.
+
+# WebP
+
+[An image format for the Web | WebP | Google for Developers](https://developers.google.com/speed/webp)
+
+> WebP is a modern _image format_ that provides superior _lossless and
+> lossy_ compression for images on the web.
+
+- It supports both lossy and lossless compression.
+
+> WebP lossless images are
+> [26% smaller](https://developers.google.com/speed/webp/docs/webp_lossless_alpha_study#results)
+> in size compared to PNGs. WebP lossy images are
+> [25–34% smaller](https://developers.google.com/speed/webp/docs/webp_study)
+> than comparable JPEG images at an equivalent
+> [SSIM](https://en.wikipedia.org/wiki/Structural_similarity) quality index.
+
+- Lossless WebP is 26% smaller than PNG.
+- Lossy WebP is 25–34% smaller than JPEG.
+
+> Lossless WebP _supports transparency_, also known as an alpha channel, at a
+> cost of just
+> [22% additional bytes](https://developers.google.com/speed/webp/docs/webp_lossless_alpha_study#results).
+> For cases when lossy RGB compression is acceptable, _lossy WebP also
+> supports transparency_, typically providing file sizes three times smaller
+> than PNG.
+
+- Does lossy WebP support transparency?
+  - WebP stores the _alpha channel separately_.
+  - This alpha channel is compressed with a _lossless method: LZ77 +
+    Huffman_.
+  - In other words, each pixel’s transparency value from 0 to 255 can be
+    restored without loss.
+
+<SectionHeading title="Lossy WebP" />
+
+- Lossy compression is based on
+  [VP8](https://en.wikipedia.org/wiki/VP8) key-frame encoding.
+
+<Callout title="VP8">
+  - An open-source video codec released by Google in 2010.
+  - Storing every frame as a photograph would make the file too large, so it
+    uses more efficient methods:
+    - *Prediction:* Estimate how similar the current block is to the block
+      before it, beside it, or above it.
+    - *Transform:* Use DCT, the Discrete Cosine Transform, to move into the
+      frequency domain.
+    - *Quantization:* Discard details that are less visible to the human eye.
+    - *Entropy Coding:* Compress the data with Huffman or arithmetic coding.
+
+→ A video codec is “a combination of techniques that compress images
+efficiently.”
+
+- WebP is the “still-frame” version of VP8.
+
+</Callout>
+
+The prediction step is the key difference in how this pipeline begins. Rather
+than encoding every block independently from its raw pixel values, lossy WebP
+predicts a block from neighboring blocks that have already been decoded. It
+then stores the _residual_—the difference between the prediction and the
+actual block. When the prediction is close, the residual contains smaller and
+more repetitive values.
+
+The residual is then transformed, quantized, and entropy-coded. As with JPEG,
+quantization is the stage that discards information. WebP can tune
+quantization and filtering for different image regions, and it uses arithmetic
+entropy coding rather than JPEG's Huffman coding. This is why “based on VP8”
+means more than simply applying DCT again: prediction and region-aware choices
+help reduce the amount of information that reaches the lossy stage.
+
+<SectionHeading title="Lossless WebP" />
+
+- The lossless compression format was developed by the WebP team.
+- It uses a variant of LZ77-Huffman coding.
+
+Lossless WebP does not use the lossy VP8 pipeline. It uses a separate `VP8L`
+bitstream designed to reconstruct ARGB pixels exactly. Before entropy coding,
+it can apply reversible transforms that:
+
+- predict a pixel from neighboring pixels and store only the residual,
+- decorrelate red, green, and blue values,
+- subtract green from the red and blue channels, or
+- replace a small set of repeated colors with palette indices.
+
+After these transforms, LZ77 backward references encode repeated pixel
+sequences, prefix codes encode frequent symbols efficiently, and a color cache
+can refer to recently used colors. Every transform has an inverse, so both
+color and alpha values are restored exactly.
+
+<SectionHeading title="How this connects to choosing a format" />
+
+- _JPEG_ is a practical choice for photographic images when transparency is
+  unnecessary and some loss is acceptable. Its pipeline deliberately removes
+  chrominance and high-frequency detail that people are less likely to notice.
+- _PNG_ is appropriate when exact pixel recovery matters, especially for
+  graphics, text-like edges, or transparency. Its filtering and DEFLATE stages
+  reorganize and compress data without discarding it.
+- _WebP_ covers both cases: lossy WebP uses prediction and quantization for
+  photographic content, while lossless WebP preserves pixels and alpha
+  exactly. It also supports animation.
+
+This also explains the role of an image optimizer such as Next/Image. The
+client sends the formats it understands in the HTTP `Accept` header, and the
+optimizer can return a configured modern format such as AVIF or WebP. If none
+of those formats match—or when conversion is not appropriate—it falls back to
+the source format. The optimizer is therefore choosing an encoding the browser
+can decode; it is not changing the underlying tradeoffs among lossy
+compression, lossless recovery, transparency, and encoding cost.
+
+<Callout title="References" backgroundColor="gray">
+  - [PNG Specification, Third Edition](https://www.w3.org/TR/png-3/) - [WebP
+  compression
+  techniques](https://developers.google.com/speed/webp/docs/compression) - [WebP
+  lossless bitstream
+  specification](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification)
+  - [Next.js Image
+  component](https://nextjs.org/docs/app/api-reference/components/image)
+</Callout>

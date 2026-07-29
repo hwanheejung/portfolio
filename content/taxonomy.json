@@ -40,6 +40,10 @@
     "bundler": {
       "label": "Bundler",
       "color": "#F0A000"
+    },
+    "web-performance": {
+      "label": "Web Performance",
+      "color": "#10B981"
     }
   }
 }

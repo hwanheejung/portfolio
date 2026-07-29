@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "22b8d3a1041103ed",
+  "buildId": "2252bfbdb9738c2c",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -44,6 +44,10 @@ export const content = {
       "bundler": {
         "label": "Bundler",
         "color": "#F0A000"
+      },
+      "web-performance": {
+        "label": "Web Performance",
+        "color": "#10B981"
       }
     }
   },
@@ -153,6 +157,7 @@ export const content = {
   "articleSlugs": [
     "when-do-effects-run",
     "why-setstate-is-asynchronous",
+    "image-format-deep-dive",
     "choosing-library-publishing-tools",
     "react-rendering-strategies",
     "why-react-left-class-components",
@@ -295,6 +300,156 @@ export const content = {
           "id": "2-e2e-autogen-a-cli-centered-library",
           "level": 2,
           "title": "2. e2e-autogen: A CLI-Centered Library"
+        }
+      ]
+    },
+    "image-format-deep-dive": {
+      "title": "Image Format Deep Dive",
+      "description": "A step-by-step look at how JPEG, PNG, and WebP compress images—and why their tradeoffs matter on the web.",
+      "slug": "image-format-deep-dive",
+      "date": "2025-09-19",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "web-performance"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "react-rendering-strategies",
+        "when-do-effects-run"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/image-format-deep-dive/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "why-i-chose-this-topic",
+          "level": 1,
+          "title": "Why I Chose This Topic"
+        },
+        {
+          "id": "jpeg-lossy-compression",
+          "level": 1,
+          "title": "JPEG: Lossy Compression"
+        },
+        {
+          "id": "step-1-convert-rgb-to-ycbcr",
+          "level": 2,
+          "title": "Step 1: Convert RGB to YCbCr"
+        },
+        {
+          "id": "step-2-reduce-chrominance-data-through-downsampling",
+          "level": 2,
+          "title": "Step 2: Reduce chrominance data through downsampling"
+        },
+        {
+          "id": "step-3-rearrange-information-so-it-is-easier-to-discard-discrete-cosine-transform-dct",
+          "level": 2,
+          "title": "Step 3: Rearrange information so it is easier to discard → Discrete Cosine Transform (DCT)"
+        },
+        {
+          "id": "an-image-is-the-sum-of-many-frequencies",
+          "level": 3,
+          "title": "An image is the sum of many frequencies"
+        },
+        {
+          "id": "the-dct-process",
+          "level": 3,
+          "title": "The DCT process"
+        },
+        {
+          "id": "2-level-shift-0255-128127",
+          "level": 3,
+          "title": "2. Level shift (0–255 → -128–127)"
+        },
+        {
+          "id": "3-the-2d-dct-formula",
+          "level": 3,
+          "title": "3. The 2D DCT formula"
+        },
+        {
+          "id": "4-the-actual-calculation-a-dc-component-example",
+          "level": 3,
+          "title": "4. The actual calculation: a DC component example"
+        },
+        {
+          "id": "step-4-discard-the-details-quantization",
+          "level": 2,
+          "title": "Step 4: Discard the details → Quantization"
+        },
+        {
+          "id": "step-5-compress-the-data-run-length-and-huffman-encoding",
+          "level": 2,
+          "title": "Step 5: Compress the data → Run-Length and Huffman Encoding"
+        },
+        {
+          "id": "①-run-length-encoding-rle-compress-consecutive-repetitions-of-the-same-value",
+          "level": 3,
+          "title": "① Run-Length Encoding (RLE): compress consecutive repetitions of the same value"
+        },
+        {
+          "id": "②-huffman-encoding-assign-short-codes-to-frequent-data-and-longer-codes-to-less-frequent-data",
+          "level": 3,
+          "title": "② Huffman Encoding: assign short codes to frequent data and longer codes to less frequent data"
+        },
+        {
+          "id": "png-lossless-compression",
+          "level": 1,
+          "title": "PNG: Lossless Compression"
+        },
+        {
+          "id": "step-1-filtering-prediction",
+          "level": 2,
+          "title": "Step 1: Filtering (prediction)"
+        },
+        {
+          "id": "delta-encoding-record-the-differences",
+          "level": 3,
+          "title": "Delta Encoding: record the differences"
+        },
+        {
+          "id": "the-five-filtering-modes",
+          "level": 3,
+          "title": "The five filtering modes"
+        },
+        {
+          "id": "step-2-deflate-lz77-huffman-coding",
+          "level": 2,
+          "title": "Step 2: DEFLATE → LZ77 + Huffman Coding"
+        },
+        {
+          "id": "lz77-compression",
+          "level": 3,
+          "title": "LZ77 compression"
+        },
+        {
+          "id": "huffman-coding",
+          "level": 3,
+          "title": "Huffman Coding"
+        },
+        {
+          "id": "png-file-structure-chunks",
+          "level": 2,
+          "title": "PNG file structure: chunks"
+        },
+        {
+          "id": "webp",
+          "level": 1,
+          "title": "WebP"
+        },
+        {
+          "id": "lossy-webp",
+          "level": 2,
+          "title": "Lossy WebP"
+        },
+        {
+          "id": "lossless-webp",
+          "level": 2,
+          "title": "Lossless WebP"
+        },
+        {
+          "id": "how-this-connects-to-choosing-a-format",
+          "level": 2,
+          "title": "How this connects to choosing a format"
         }
       ]
     },

@@ -39,4 +39,19 @@ describe("extractArticleToc", () => {
       "Visible",
     ]);
   });
+
+  it("includes headings only through level two", () => {
+    const body = [
+      "# Section",
+      "",
+      "## Subsection",
+      "",
+      "### Detail",
+    ].join("\n");
+
+    expect(extractArticleToc(body).map((item) => item.title)).toEqual([
+      "Section",
+      "Subsection",
+    ]);
+  });
 });
