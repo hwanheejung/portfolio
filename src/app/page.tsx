@@ -63,7 +63,7 @@ export default async function HomePage() {
           <div className="space-y-28 md:space-y-40">
             {home.experiences.map((experience, index) => {
               const work = home.featuredWorks.find(
-                (item) => item.experienceId === experience.id,
+                (item) => item.experienceId === experience.id
               );
 
               return (
@@ -153,7 +153,7 @@ export default async function HomePage() {
               Articles
             </p>
             <h2 className="mt-4 text-[clamp(3rem,7vw,6.6rem)] leading-[0.9] font-[620] tracking-[-0.06em]">
-              Notes in motion.
+              Writing
             </h2>
           </div>
           <Link

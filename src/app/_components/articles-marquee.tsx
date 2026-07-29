@@ -40,7 +40,7 @@ function MarqueeRow({
     const track = trackRef.current;
     if (!track) return;
     const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
+      "(prefers-reduced-motion: reduce)"
     ).matches;
     if (reducedMotion) return;
 
@@ -49,8 +49,14 @@ function MarqueeRow({
       const half = track.scrollWidth / 2;
       const keyframes =
         direction === "left"
-          ? [{ transform: "translate3d(0,0,0)" }, { transform: `translate3d(${-half}px,0,0)` }]
-          : [{ transform: `translate3d(${-half}px,0,0)` }, { transform: "translate3d(0,0,0)" }];
+          ? [
+              { transform: "translate3d(0,0,0)" },
+              { transform: `translate3d(${-half}px,0,0)` },
+            ]
+          : [
+              { transform: `translate3d(${-half}px,0,0)` },
+              { transform: "translate3d(0,0,0)" },
+            ];
       animationRef.current = track.animate(keyframes, {
         duration: 48000,
         easing: "linear",
@@ -133,7 +139,7 @@ function MarqueeRow({
           top: cursor.y,
         }}
       >
-        더보기 →
+        More →
       </div>
     </div>
   );

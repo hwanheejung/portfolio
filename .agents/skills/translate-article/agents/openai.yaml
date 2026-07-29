@@ -1,4 +1,4 @@
 interface:
-  display_name: "Translate Portfolio Article"
-  short_description: "Turn Korean drafts into polished English MDX articles"
-  default_prompt: "Use $translate-portfolio-article to turn this Korean draft into a polished portfolio article."
+  display_name: "Translate Article"
+  short_description: "Translate Korean drafts into faithful English MDX"
+  default_prompt: "Use $translate-article to faithfully translate this Korean draft into a portfolio article."

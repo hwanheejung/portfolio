@@ -29,6 +29,10 @@
       "label": "Functional Programming",
       "color": "#8B5CF6"
     },
+    "object-oriented-programming": {
+      "label": "OOP",
+      "color": "#F59E0B"
+    },
     "react": {
       "label": "React",
       "color": "#087EA4"

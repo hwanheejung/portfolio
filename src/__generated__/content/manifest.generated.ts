@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "5fcca30596c50547",
+  "buildId": "d512a343c93bca88",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -32,6 +32,10 @@ export const content = {
       "functional-programming": {
         "label": "Functional Programming",
         "color": "#8B5CF6"
+      },
+      "object-oriented-programming": {
+        "label": "OOP",
+        "color": "#F59E0B"
       },
       "react": {
         "label": "React",
@@ -148,12 +152,177 @@ export const content = {
   },
   "articleSlugs": [
     "why-setstate-is-asynchronous",
+    "predictable-objects",
     "side-effect",
     "type-safe-pipe",
     "type-safe-curry",
     "thinking-in-graph"
   ],
   "articlesBySlug": {
+    "predictable-objects": {
+      "title": "Is Class State Unpredictable? Try Immutable Objects",
+      "description": "Notes on naming, identity, immutability, and interfaces as ways to design objects that take responsibility and collaborate.",
+      "slug": "predictable-objects",
+      "date": "2025-03-26",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "object-oriented-programming"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "side-effect"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/predictable-objects/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "tldr",
+          "level": 2,
+          "title": "TL;DR"
+        },
+        {
+          "id": "1-respecting-objects-starts-with-naming-them-carefully",
+          "level": 1,
+          "title": "1. Respecting Objects Starts with Naming Them Carefully"
+        },
+        {
+          "id": "11-naming-is-the-first-sign-of-respect",
+          "level": 2,
+          "title": "1.1. Naming Is the First Sign of Respect"
+        },
+        {
+          "id": "12-avoid-er-in-class-names",
+          "level": 2,
+          "title": "1.2. Avoid -er in Class Names"
+        },
+        {
+          "id": "13-name-methods-carefully-too",
+          "level": 2,
+          "title": "1.3. Name Methods Carefully Too"
+        },
+        {
+          "id": "14-separate-commands-and-queries",
+          "level": 2,
+          "title": "1.4. Separate Commands and Queries"
+        },
+        {
+          "id": "15-can-a-method-look-like-a-property",
+          "level": 2,
+          "title": "1.5. Can a Method Look Like a Property?"
+        },
+        {
+          "id": "16-summary",
+          "level": 2,
+          "title": "1.6. Summary"
+        },
+        {
+          "id": "2-an-objects-identifier-is-its-coordinate-in-the-world",
+          "level": 1,
+          "title": "2. An Object's Identifier Is Its Coordinate in the World"
+        },
+        {
+          "id": "what-exactly-is-an-identifier",
+          "level": 2,
+          "title": "What Exactly Is an Identifier?"
+        },
+        {
+          "id": "changing-the-identifier-creates-a-different-object",
+          "level": 2,
+          "title": "Changing the Identifier Creates a Different Object"
+        },
+        {
+          "id": "are-objects-with-the-same-state-the-same-object",
+          "level": 2,
+          "title": "Are Objects with the Same State the Same Object?"
+        },
+        {
+          "id": "3-prefer-immutable-objects-and-delay-mutability",
+          "level": 1,
+          "title": "3. Prefer Immutable Objects and Delay Mutability"
+        },
+        {
+          "id": "31-why-use-immutable-objects",
+          "level": 2,
+          "title": "3.1. Why Use Immutable Objects?"
+        },
+        {
+          "id": "immutability-resembles-the-philosophy-of-pure-functions",
+          "level": 2,
+          "title": "Immutability Resembles the Philosophy of Pure Functions"
+        },
+        {
+          "id": "32-rethinking-what-immutable-means",
+          "level": 2,
+          "title": "3.2. Rethinking What Immutable Means"
+        },
+        {
+          "id": "identity-state-and-behavior",
+          "level": 2,
+          "title": "Identity, State, and Behavior"
+        },
+        {
+          "id": "constant-faithful-and-mutable-objects",
+          "level": 2,
+          "title": "Constant, Faithful, and Mutable Objects"
+        },
+        {
+          "id": "4-objects-collaborate-and-collaboration-needs-contracts",
+          "level": 1,
+          "title": "4. Objects Collaborate, and Collaboration Needs Contracts"
+        },
+        {
+          "id": "41-objects-exist-in-relationships",
+          "level": 2,
+          "title": "4.1. Objects Exist in Relationships"
+        },
+        {
+          "id": "42-the-world-of-objects-resembles-a-society",
+          "level": 2,
+          "title": "4.2. The World of Objects Resembles a Society"
+        },
+        {
+          "id": "43-the-interface-is-that-buffer",
+          "level": 2,
+          "title": "4.3. The Interface Is That Buffer"
+        },
+        {
+          "id": "44-an-object-can-follow-several-contracts",
+          "level": 2,
+          "title": "4.4. An Object Can Follow Several Contracts"
+        },
+        {
+          "id": "45-why-should-public-methods-belong-to-a-contract",
+          "level": 2,
+          "title": "4.5. Why Should Public Methods Belong to a Contract?"
+        },
+        {
+          "id": "5-unanswered-questions",
+          "level": 1,
+          "title": "5. Unanswered Questions"
+        },
+        {
+          "id": "the-cost-of-immutability",
+          "level": 2,
+          "title": "The Cost of Immutability"
+        },
+        {
+          "id": "why-is-the-ui-thread-single-threaded",
+          "level": 2,
+          "title": "Why Is the UI Thread Single-Threaded?"
+        },
+        {
+          "id": "does-a-declarative-wrapper-really-matter",
+          "level": 2,
+          "title": "Does a Declarative Wrapper Really Matter?"
+        },
+        {
+          "id": "do-oop-and-fp-solve-the-same-problem-differently",
+          "level": 2,
+          "title": "Do OOP and FP Solve the Same Problem Differently?"
+        }
+      ]
+    },
     "side-effect": {
       "title": "Is an Invisible Side Effect Harmless?",
       "description": "Exploring hidden side effects, referential transparency, and practical ways to keep unavoidable effects predictable.",
