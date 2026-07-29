@@ -27,9 +27,23 @@ export type ArticleSummary = {
   readonly thumbnailUrl?: string;
   readonly kind: string;
   readonly topics: readonly string[];
-  readonly experienceIds: readonly string[];
   readonly spotlightIn: Readonly<Record<string, number>>;
   readonly related: readonly string[];
+  readonly toc: readonly ArticleTocItem[];
+};
+
+export type WorkSummary = {
+  readonly title: string;
+  readonly slug: string;
+  readonly date: string;
+  readonly draft: boolean;
+  readonly description?: string;
+  readonly thumbnail?: string;
+  readonly thumbnailUrl?: string;
+  readonly kind: string;
+  readonly topics: readonly string[];
+  readonly experienceId: string;
+  readonly spotlightIn: Readonly<Record<string, number>>;
   readonly toc: readonly ArticleTocItem[];
 };
 
@@ -42,9 +56,11 @@ export type Experience = {
     readonly end: string | null;
   };
   readonly summary: string;
+  readonly scale: string;
+  readonly learning: string;
   readonly highlights: readonly string[];
   readonly images: readonly string[];
-  readonly articleSlugs: readonly string[];
+  readonly workSlugs: readonly string[];
 };
 
 export type ContentManifest = {
@@ -58,8 +74,11 @@ export type ContentManifest = {
   readonly experiencesById: Readonly<Record<string, Experience>>;
   readonly articleSlugs: readonly string[];
   readonly articlesBySlug: Readonly<Record<string, ArticleSummary>>;
+  readonly workSlugs: readonly string[];
+  readonly worksBySlug: Readonly<Record<string, WorkSummary>>;
   readonly home: {
-    readonly featuredContent: readonly string[];
+    readonly featuredArticles: readonly string[];
+    readonly featuredWorks: readonly string[];
   };
 };
 

@@ -25,6 +25,8 @@
         "role",
         "period",
         "summary",
+        "scale",
+        "learning",
         "highlights",
         "images"
       ],
@@ -48,6 +50,8 @@
           }
         },
         "summary": { "type": "string", "minLength": 1 },
+        "scale": { "type": "string", "minLength": 1 },
+        "learning": { "type": "string", "minLength": 1 },
         "highlights": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }

@@ -5,6 +5,7 @@ export type {
   ArticleSlug,
   ExperienceId,
   TopicId,
+  WorkSlug,
 } from "./manifest.generated";
 export type {
   About,
@@ -15,4 +16,5 @@ export type {
   Experience,
   Taxonomy,
   TaxonomyEntry,
+  WorkSummary,
 } from "./types.generated";

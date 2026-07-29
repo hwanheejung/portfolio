@@ -21,6 +21,7 @@ const PROJECT_ROOT = path.resolve(
 );
 const CONTENT_ROOT = path.join(PROJECT_ROOT, "content");
 const ARTICLES_ROOT = path.join(CONTENT_ROOT, "articles");
+const EXPERIENCES_ROOT = path.join(CONTENT_ROOT, "experiences");
 const GENERATED_ROOT = path.join(
   PROJECT_ROOT,
   "src",
@@ -221,7 +222,14 @@ function plainTextFromMdx(body) {
     .trim();
 }
 
-function buildSearchDocuments(articlesBySlug, articleSlugs, experiences, about) {
+function buildSearchDocuments(
+  articlesBySlug,
+  articleSlugs,
+  worksBySlug,
+  workSlugs,
+  experiences,
+  about,
+) {
   const documents = articleSlugs.map((slug) => {
     const article = articlesBySlug[slug];
     return {
@@ -231,11 +239,26 @@ function buildSearchDocuments(articlesBySlug, articleSlugs, experiences, about) 
       title: article.title,
       kind: article.kind,
       topics: article.topics,
-      experienceIds: article.experienceIds,
+      experienceIds: [],
       url: `/articles/${slug}`,
       text: article.searchText,
     };
   });
+
+  for (const slug of workSlugs) {
+    const work = worksBySlug[slug];
+    documents.push({
+      id: `work:${slug}`,
+      sourceType: "work",
+      sourceId: slug,
+      title: work.title,
+      kind: work.kind,
+      topics: work.topics,
+      experienceIds: [work.experienceId],
+      url: `/work/${slug}`,
+      text: work.searchText,
+    });
+  }
 
   for (const experience of experiences) {
     documents.push({
@@ -305,9 +328,23 @@ export type ArticleSummary = {
   readonly thumbnailUrl?: string;
   readonly kind: string;
   readonly topics: readonly string[];
-  readonly experienceIds: readonly string[];
   readonly spotlightIn: Readonly<Record<string, number>>;
   readonly related: readonly string[];
+  readonly toc: readonly ArticleTocItem[];
+};
+
+export type WorkSummary = {
+  readonly title: string;
+  readonly slug: string;
+  readonly date: string;
+  readonly draft: boolean;
+  readonly description?: string;
+  readonly thumbnail?: string;
+  readonly thumbnailUrl?: string;
+  readonly kind: string;
+  readonly topics: readonly string[];
+  readonly experienceId: string;
+  readonly spotlightIn: Readonly<Record<string, number>>;
   readonly toc: readonly ArticleTocItem[];
 };
 
@@ -320,9 +357,11 @@ export type Experience = {
     readonly end: string | null;
   };
   readonly summary: string;
+  readonly scale: string;
+  readonly learning: string;
   readonly highlights: readonly string[];
   readonly images: readonly string[];
-  readonly articleSlugs: readonly string[];
+  readonly workSlugs: readonly string[];
 };
 
 export type ContentManifest = {
@@ -336,8 +375,11 @@ export type ContentManifest = {
   readonly experiencesById: Readonly<Record<string, Experience>>;
   readonly articleSlugs: readonly string[];
   readonly articlesBySlug: Readonly<Record<string, ArticleSummary>>;
+  readonly workSlugs: readonly string[];
+  readonly worksBySlug: Readonly<Record<string, WorkSummary>>;
   readonly home: {
-    readonly featuredContent: readonly string[];
+    readonly featuredArticles: readonly string[];
+    readonly featuredWorks: readonly string[];
   };
 };
 
@@ -383,6 +425,7 @@ export type ArticleKindId = keyof typeof content.taxonomy.kinds;
 export type TopicId = keyof typeof content.taxonomy.topics;
 export type ExperienceId = keyof typeof content.experiencesById;
 export type ArticleSlug = keyof typeof content.articlesBySlug;
+export type WorkSlug = keyof typeof content.worksBySlug;
 `;
 }
 
@@ -394,6 +437,7 @@ export type {
   ArticleSlug,
   ExperienceId,
   TopicId,
+  WorkSlug,
 } from "./manifest.generated";
 export type {
   About,
@@ -404,6 +448,7 @@ export type {
   Experience,
   Taxonomy,
   TaxonomyEntry,
+  WorkSummary,
 } from "./types.generated";
 `;
 }
@@ -461,6 +506,33 @@ async function copyContentAssets() {
     }
   }
 
+  const experienceEntries = await readdir(EXPERIENCES_ROOT, {
+    withFileTypes: true,
+  });
+  for (const experienceEntry of experienceEntries) {
+    if (!experienceEntry.isDirectory() || experienceEntry.name.startsWith(".")) {
+      continue;
+    }
+    const worksRoot = path.join(
+      EXPERIENCES_ROOT,
+      experienceEntry.name,
+      "works",
+    );
+    if (!(await fileExists(worksRoot))) continue;
+    const workEntries = await readdir(worksRoot, { withFileTypes: true });
+    for (const workEntry of workEntries) {
+      if (!workEntry.isDirectory() || workEntry.name.startsWith(".")) continue;
+      const source = path.join(worksRoot, workEntry.name, "images");
+      if (await fileExists(source)) {
+        await cp(
+          source,
+          path.join(PUBLIC_CONTENT_ROOT, "works", workEntry.name, "images"),
+          { recursive: true, force: true },
+        );
+      }
+    }
+  }
+
   for (const collection of ["experiences", "about"]) {
     const source = path.join(CONTENT_ROOT, collection, "images");
     if (await fileExists(source)) {
@@ -487,6 +559,7 @@ export async function compileContent({
     aboutFile,
     aboutSchemaFile,
     articleSchemaFile,
+    workSchemaFile,
   ] = await Promise.all([
     readJson("content/taxonomy.json"),
     readJson("content/taxonomy.schema.json"),
@@ -495,6 +568,7 @@ export async function compileContent({
     readJson("content/about/index.json"),
     readJson("content/about/about.schema.json"),
     readJson("content/articles/article.schema.json"),
+    readJson("content/experiences/work.schema.json"),
   ]);
 
   for (const file of [
@@ -505,6 +579,7 @@ export async function compileContent({
     aboutFile,
     aboutSchemaFile,
     articleSchemaFile,
+    workSchemaFile,
   ]) {
     sourceHasher.update(file.relativePath);
     sourceHasher.update(file.source);
@@ -530,7 +605,6 @@ export async function compileContent({
   const about = stripSchemaKey(aboutFile.data);
   const experiences = experiencesSource.experiences ?? [];
   const experienceIds = experiences.map((experience) => experience.id);
-  const experienceIdSet = new Set(experienceIds);
 
   for (const duplicate of duplicateValues(experienceIds)) {
     issues.push({
@@ -647,14 +721,6 @@ export async function compileContent({
         });
       }
     }
-    for (const experienceId of article.experienceIds) {
-      if (!experienceIdSet.has(experienceId)) {
-        issues.push({
-          file: relativeFile,
-          message: `Unknown experience "${experienceId}".`,
-        });
-      }
-    }
     if (!article.draft && (!article.description || !article.thumbnail)) {
       issues.push({
         file: relativeFile,
@@ -695,7 +761,121 @@ export async function compileContent({
   const articleSlugs = Object.keys(articlesBySlug).sort((a, b) =>
     articlesBySlug[b].date.localeCompare(articlesBySlug[a].date),
   );
-  const homeOrders = new Map();
+  const validateWork = createValidator(workSchemaFile.data);
+  const worksBySlug = {};
+  const workBodies = {};
+
+  for (const experienceId of experienceIds) {
+    const worksRoot = path.join(EXPERIENCES_ROOT, experienceId, "works");
+    if (!(await fileExists(worksRoot))) continue;
+    const workEntries = (await readdir(worksRoot, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const entry of workEntries) {
+      const relativeFile =
+        `content/experiences/${experienceId}/works/${entry.name}/index.mdx`;
+      const workFile = path.join(worksRoot, entry.name, "index.mdx");
+      let source;
+      try {
+        source = await readFile(workFile, "utf8");
+      } catch {
+        issues.push({ file: relativeFile, message: "Work file is missing." });
+        continue;
+      }
+      sourceHasher.update(relativeFile);
+      sourceHasher.update(source);
+
+      let document;
+      try {
+        document = parseMdxDocument(source, relativeFile);
+      } catch (error) {
+        if (error instanceof ContentCompilationError) {
+          issues.push(...error.issues);
+          continue;
+        }
+        throw error;
+      }
+
+      if (!validateWork(document.data)) {
+        issues.push({
+          file: relativeFile,
+          message: formatAjvErrors(validateWork.errors),
+        });
+        continue;
+      }
+
+      const work = document.data;
+      if (work.slug !== entry.name) {
+        issues.push({
+          file: relativeFile,
+          message: `Folder "${entry.name}" must match slug "${work.slug}".`,
+        });
+      }
+      if (worksBySlug[work.slug] || articlesBySlug[work.slug]) {
+        issues.push({
+          file: relativeFile,
+          message: `Content slug "${work.slug}" must be globally unique.`,
+        });
+      }
+      if (!taxonomy.kinds?.[work.kind]) {
+        issues.push({
+          file: relativeFile,
+          message: `Unknown work kind "${work.kind}".`,
+        });
+      }
+      for (const topic of work.topics) {
+        if (!taxonomy.topics?.[topic]) {
+          issues.push({
+            file: relativeFile,
+            message: `Unknown topic "${topic}".`,
+          });
+        }
+      }
+      if (!work.draft && (!work.description || !work.thumbnail)) {
+        issues.push({
+          file: relativeFile,
+          message: "Published works require description and thumbnail.",
+        });
+      }
+      if (work.thumbnail) {
+        const thumbnailPath = resolveAssetPath(
+          path.dirname(workFile),
+          work.thumbnail,
+        );
+        if (!thumbnailPath || !(await fileExists(thumbnailPath))) {
+          issues.push({
+            file: relativeFile,
+            message: `Thumbnail "${work.thumbnail}" does not exist.`,
+          });
+        }
+      }
+      validateMdxBody(document.body, relativeFile, issues);
+
+      worksBySlug[work.slug] = {
+        ...work,
+        experienceId,
+        ...(work.thumbnail
+          ? {
+              thumbnailUrl: resolveAssetUrl(
+                "works",
+                work.slug,
+                work.thumbnail,
+              ),
+            }
+          : {}),
+        toc: extractArticleToc(document.body),
+        searchText: plainTextFromMdx(document.body),
+      };
+      workBodies[work.slug] = document.body;
+    }
+  }
+
+  const workSlugs = Object.keys(worksBySlug).sort((a, b) =>
+    worksBySlug[b].date.localeCompare(worksBySlug[a].date),
+  );
+  const articleHomeOrders = new Map();
+  const workHomeOrders = new Map();
 
   for (const slug of articleSlugs) {
     const article = articlesBySlug[slug];
@@ -721,18 +901,38 @@ export async function compileContent({
           message: "Draft articles cannot be spotlighted on home.",
         });
       }
-      const existing = homeOrders.get(homeOrder);
+      const existing = articleHomeOrders.get(homeOrder);
       if (existing) {
         issues.push({
           file: `content/articles/${slug}/index.mdx`,
           message: `Home spotlight order ${homeOrder} is already used by "${existing}".`,
         });
       }
-      homeOrders.set(homeOrder, slug);
+      articleHomeOrders.set(homeOrder, slug);
     }
   }
 
-  const featuredContent = articleSlugs
+  for (const slug of workSlugs) {
+    const work = worksBySlug[slug];
+    const homeOrder = work.spotlightIn.home;
+    if (homeOrder === undefined) continue;
+    if (work.draft) {
+      issues.push({
+        file: `content/experiences/${work.experienceId}/works/${slug}/index.mdx`,
+        message: "Draft works cannot be spotlighted on home.",
+      });
+    }
+    const existing = workHomeOrders.get(homeOrder);
+    if (existing) {
+      issues.push({
+        file: `content/experiences/${work.experienceId}/works/${slug}/index.mdx`,
+        message: `Home work order ${homeOrder} is already used by "${existing}".`,
+      });
+    }
+    workHomeOrders.set(homeOrder, slug);
+  }
+
+  const featuredArticles = articleSlugs
     .filter((slug) => articlesBySlug[slug].spotlightIn.home !== undefined)
     .sort(
       (a, b) =>
@@ -740,11 +940,19 @@ export async function compileContent({
           articlesBySlug[b].spotlightIn.home ||
         articlesBySlug[b].date.localeCompare(articlesBySlug[a].date),
     );
+  const featuredWorks = workSlugs
+    .filter((slug) => worksBySlug[slug].spotlightIn.home !== undefined)
+    .sort(
+      (a, b) =>
+        worksBySlug[a].spotlightIn.home -
+          worksBySlug[b].spotlightIn.home ||
+        worksBySlug[b].date.localeCompare(worksBySlug[a].date),
+    );
 
   const compiledExperiences = experiences.map((experience) => ({
     ...experience,
-    articleSlugs: articleSlugs.filter((slug) =>
-      articlesBySlug[slug].experienceIds.includes(experience.id),
+    workSlugs: workSlugs.filter(
+      (slug) => worksBySlug[slug].experienceId === experience.id,
     ),
   }));
   const experiencesById = Object.fromEntries(
@@ -758,6 +966,9 @@ export async function compileContent({
   for (const article of Object.values(articlesBySlug)) {
     delete article.searchText;
   }
+  for (const work of Object.values(worksBySlug)) {
+    delete work.searchText;
+  }
 
   const manifest = {
     buildId: sourceHasher.digest("hex").slice(0, 16),
@@ -767,7 +978,9 @@ export async function compileContent({
     experiencesById,
     articleSlugs,
     articlesBySlug,
-    home: { featuredContent },
+    workSlugs,
+    worksBySlug,
+    home: { featuredArticles, featuredWorks },
   };
   const searchDocuments = buildSearchDocuments(
     Object.fromEntries(
@@ -780,6 +993,16 @@ export async function compileContent({
       ]),
     ),
     articleSlugs,
+    Object.fromEntries(
+      workSlugs.map((slug) => [
+        slug,
+        {
+          ...worksBySlug[slug],
+          searchText: plainTextFromMdx(workBodies[slug]),
+        },
+      ]),
+    ),
+    workSlugs,
     compiledExperiences,
     about,
   );
@@ -806,8 +1029,9 @@ export async function compileContent({
 
   return {
     articleCount: articleSlugs.length,
+    workCount: workSlugs.length,
     experienceCount: experienceIds.length,
-    featuredCount: featuredContent.length,
+    featuredCount: featuredArticles.length + featuredWorks.length,
     manifest,
   };
 }

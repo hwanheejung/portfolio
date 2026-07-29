@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "56da4f511a1e1181",
+  "buildId": "b9e083fbb7601064",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -47,7 +47,7 @@ export const content = {
     "hero": {
       "eyebrow": "Hi, I'm Hwanhee.",
       "heading": "Building human-centered products through software",
-      "description": "Product-minded frontend engineer based in Seoul, turning complex systems into clear, useful experiences."
+      "description": "Product-minded frontend engineer based in Seoul, turning complex systems into clear, useful experiences. Prev. Karrot, Naver"
     },
     "summary": {
       "heading": "A product engineer who enjoys making complex things feel simple.",
@@ -117,12 +117,14 @@ export const content = {
         "end": "2026.04"
       },
       "summary": "Building tools and product experiences that help local teams move with clarity.",
+      "scale": "Korea's local-life platform · 21M+ monthly active users",
+      "learning": "Build systems that reveal operational problems before they reach users.",
       "highlights": [
         "Designed automation systems for recurring operational work.",
         "Connected product context with maintainable frontend architecture."
       ],
       "images": [],
-      "articleSlugs": [
+      "workSlugs": [
         "feature-flag"
       ]
     },
@@ -135,108 +137,22 @@ export const content = {
         "end": "2025.10"
       },
       "summary": "Worked on user-facing web products and the foundations that supported them.",
+      "scale": "Korea's leading search platform · 50M daily visitors",
+      "learning": "Frontend foundations must remain clear across many product surfaces.",
       "highlights": [
         "Improved shared frontend workflows across product surfaces."
       ],
       "images": [],
-      "articleSlugs": []
+      "workSlugs": []
     }
   },
   "articleSlugs": [
-    "feature-flag",
     "why-setstate-is-asynchronous",
     "type-safe-pipe",
     "type-safe-curry",
     "thinking-in-graph"
   ],
   "articlesBySlug": {
-    "feature-flag": {
-      "title": "From Feature Flags to a Proactive Experiment Monitoring Pipeline",
-      "description": "Building a reliable feature rollout system and self-reporting A/B test system for product team.",
-      "slug": "feature-flag",
-      "date": "2026-07-24",
-      "draft": false,
-      "kind": "case-study",
-      "topics": [
-        "automation"
-      ],
-      "experienceIds": [
-        "karrot"
-      ],
-      "spotlightIn": {
-        "home": 1
-      },
-      "related": [],
-      "thumbnail": "./images/stakeholder-conversations.png",
-      "thumbnailUrl": "/_content/articles/feature-flag/images/stakeholder-conversations.png",
-      "toc": [
-        {
-          "id": "overview",
-          "level": 2,
-          "title": "Overview"
-        },
-        {
-          "id": "background",
-          "level": 2,
-          "title": "Background"
-        },
-        {
-          "id": "the-process",
-          "level": 2,
-          "title": "The Process"
-        },
-        {
-          "id": "01-identifying-problems",
-          "level": 1,
-          "title": "01. Identifying Problems"
-        },
-        {
-          "id": "incidents",
-          "level": 2,
-          "title": "Incidents"
-        },
-        {
-          "id": "a-slow-shutdown",
-          "level": 3,
-          "title": "A. Slow shutdown"
-        },
-        {
-          "id": "b-manual-experiments",
-          "level": 3,
-          "title": "B. Manual experiments"
-        },
-        {
-          "id": "c-missed-checkpoints",
-          "level": 3,
-          "title": "C. Missed checkpoints"
-        },
-        {
-          "id": "operation-data",
-          "level": 2,
-          "title": "Operation Data"
-        },
-        {
-          "id": "stakeholder-conversations",
-          "level": 2,
-          "title": "Stakeholder Conversations"
-        },
-        {
-          "id": "synthesis",
-          "level": 2,
-          "title": "Synthesis"
-        },
-        {
-          "id": "02-building",
-          "level": 1,
-          "title": "02. Building"
-        },
-        {
-          "id": "solution-overview",
-          "level": 2,
-          "title": "Solution Overview"
-        }
-      ]
-    },
     "thinking-in-graph": {
       "title": "Thinking in Graph",
       "description": "Moving beyond a REST-shaped GraphQL API toward node-based schemas, single-query patterns, and field-level resolver chains.",
@@ -247,13 +163,12 @@ export const content = {
       "topics": [
         "graphql"
       ],
-      "experienceIds": [],
       "spotlightIn": {
-        "home": 2
+        "home": 1
       },
       "related": [],
-      "thumbnail": "./images/schema-after-refactor.png",
-      "thumbnailUrl": "/_content/articles/thinking-in-graph/images/schema-after-refactor.png",
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/thinking-in-graph/images/thumbnail-editorial.png",
       "toc": [
         {
           "id": "1-from-a-restful-mindset-to-graphql",
@@ -347,13 +262,12 @@ export const content = {
       "topics": [
         "functional-programming"
       ],
-      "experienceIds": [],
       "spotlightIn": {},
       "related": [
         "type-safe-pipe"
       ],
-      "thumbnail": "./images/rambda-curry-source.png",
-      "thumbnailUrl": "/_content/articles/type-safe-curry/images/rambda-curry-source.png",
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/type-safe-curry/images/thumbnail-editorial.png",
       "toc": [
         {
           "id": "0-functional-programming-and-currying",
@@ -477,13 +391,12 @@ export const content = {
       "topics": [
         "functional-programming"
       ],
-      "experienceIds": [],
       "spotlightIn": {},
       "related": [
         "type-safe-curry"
       ],
-      "thumbnail": "./images/fp-ts-pipe-overloads.png",
-      "thumbnailUrl": "/_content/articles/type-safe-pipe/images/fp-ts-pipe-overloads.png",
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/type-safe-pipe/images/thumbnail-editorial.png",
       "toc": [
         {
           "id": "1-introducing-pipe",
@@ -547,11 +460,10 @@ export const content = {
       "topics": [
         "react"
       ],
-      "experienceIds": [],
       "spotlightIn": {},
       "related": [],
-      "thumbnail": "./images/react-lanes.png",
-      "thumbnailUrl": "/_content/articles/why-setstate-is-asynchronous/images/react-lanes.png",
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/why-setstate-is-asynchronous/images/thumbnail-editorial.png",
       "toc": [
         {
           "id": "part-1-because-it-is-a-more-efficient-structure",
@@ -631,10 +543,101 @@ export const content = {
       ]
     }
   },
+  "workSlugs": [
+    "feature-flag"
+  ],
+  "worksBySlug": {
+    "feature-flag": {
+      "title": "From Feature Flags to a Proactive Experiment Monitoring Pipeline",
+      "description": "Building a reliable feature rollout system and self-reporting A/B test system for product team.",
+      "slug": "feature-flag",
+      "date": "2026-07-24",
+      "draft": false,
+      "kind": "case-study",
+      "topics": [
+        "automation"
+      ],
+      "spotlightIn": {
+        "home": 1
+      },
+      "thumbnail": "./images/stakeholder-conversations.png",
+      "experienceId": "karrot",
+      "thumbnailUrl": "/_content/works/feature-flag/images/stakeholder-conversations.png",
+      "toc": [
+        {
+          "id": "overview",
+          "level": 2,
+          "title": "Overview"
+        },
+        {
+          "id": "background",
+          "level": 2,
+          "title": "Background"
+        },
+        {
+          "id": "the-process",
+          "level": 2,
+          "title": "The Process"
+        },
+        {
+          "id": "01-identifying-problems",
+          "level": 1,
+          "title": "01. Identifying Problems"
+        },
+        {
+          "id": "incidents",
+          "level": 2,
+          "title": "Incidents"
+        },
+        {
+          "id": "a-slow-shutdown",
+          "level": 3,
+          "title": "A. Slow shutdown"
+        },
+        {
+          "id": "b-manual-experiments",
+          "level": 3,
+          "title": "B. Manual experiments"
+        },
+        {
+          "id": "c-missed-checkpoints",
+          "level": 3,
+          "title": "C. Missed checkpoints"
+        },
+        {
+          "id": "operation-data",
+          "level": 2,
+          "title": "Operation Data"
+        },
+        {
+          "id": "stakeholder-conversations",
+          "level": 2,
+          "title": "Stakeholder Conversations"
+        },
+        {
+          "id": "synthesis",
+          "level": 2,
+          "title": "Synthesis"
+        },
+        {
+          "id": "02-building",
+          "level": 1,
+          "title": "02. Building"
+        },
+        {
+          "id": "solution-overview",
+          "level": 2,
+          "title": "Solution Overview"
+        }
+      ]
+    }
+  },
   "home": {
-    "featuredContent": [
-      "feature-flag",
+    "featuredArticles": [
       "thinking-in-graph"
+    ],
+    "featuredWorks": [
+      "feature-flag"
     ]
   }
 } as const satisfies ContentManifest;
@@ -643,3 +646,4 @@ export type ArticleKindId = keyof typeof content.taxonomy.kinds;
 export type TopicId = keyof typeof content.taxonomy.topics;
 export type ExperienceId = keyof typeof content.experiencesById;
 export type ArticleSlug = keyof typeof content.articlesBySlug;
+export type WorkSlug = keyof typeof content.worksBySlug;

@@ -10,7 +10,7 @@ try {
   console.log(
     `${check ? "Content is current" : "Content compiled"}: ${
       result.articleCount
-    } articles, ${result.experienceCount} experiences, ${
+    } articles, ${result.workCount} works, ${result.experienceCount} experiences, ${
       result.featuredCount
     } home spotlights.`,
   );

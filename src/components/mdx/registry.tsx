@@ -33,7 +33,10 @@ const baseMdxComponents: MDXComponents = {
   em: WhiteText,
 };
 
-const createArticleMdxComponents = (slug: string): MDXComponents => {
+const createContentMdxComponents = (
+  collection: "articles" | "works",
+  slug: string,
+): MDXComponents => {
   return {
     ...baseMdxComponents,
     h1: ({ children, ...props }: ComponentProps<"h1">) => (
@@ -52,30 +55,45 @@ const createArticleMdxComponents = (slug: string): MDXComponents => {
       </h3>
     ),
     Figure: (props: FigureProps) => (
-      <Figure {...props} src={resolveArticleAsset(slug, props.src)} />
+      <Figure {...props} src={resolveContentAsset(collection, slug, props.src)} />
     ),
     img: (props: ComponentProps<"img">) => {
       const source = typeof props.src === "string" ? props.src : "";
       return (
         <Figure
           alt={props.alt ?? ""}
-          src={resolveArticleAsset(slug, source)}
+          src={resolveContentAsset(collection, slug, source)}
         />
       );
     },
   };
 };
 
+const createArticleMdxComponents = (slug: string): MDXComponents =>
+  createContentMdxComponents("articles", slug);
+
+const createWorkMdxComponents = (slug: string): MDXComponents =>
+  createContentMdxComponents("works", slug);
+
 const MdxProse = ({ children }: Props) => {
   return <div className="article-prose">{children}</div>;
 };
 
-export { baseMdxComponents, createArticleMdxComponents, MdxProse };
+export {
+  baseMdxComponents,
+  createArticleMdxComponents,
+  createWorkMdxComponents,
+  MdxProse,
+};
 
-const resolveArticleAsset = (slug: string, source: string) => {
+const resolveContentAsset = (
+  collection: "articles" | "works",
+  slug: string,
+  source: string,
+) => {
   if (!source.startsWith("./images/")) {
     return source;
   }
 
-  return `/_content/articles/${slug}/${source.slice(2)}`;
+  return `/_content/${collection}/${slug}/${source.slice(2)}`;
 };

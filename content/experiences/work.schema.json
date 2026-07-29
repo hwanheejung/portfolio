@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "article.schema.json",
-  "title": "Article frontmatter",
+  "$id": "work.schema.json",
+  "title": "Experience work frontmatter",
   "type": "object",
   "required": [
     "title",
@@ -10,8 +10,7 @@
     "draft",
     "kind",
     "topics",
-    "spotlightIn",
-    "related"
+    "spotlightIn"
   ],
   "additionalProperties": false,
   "properties": {
@@ -39,11 +38,6 @@
           "minimum": 1
         }
       }
-    },
-    "related": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "$ref": "#/definitions/slug" }
     }
   },
   "definitions": {

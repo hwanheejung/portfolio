@@ -204,8 +204,8 @@ export function ArticlesBrowser({
     () =>
       [...kindIds].sort(
         (a, b) => taxonomy.kinds[a]!.order - taxonomy.kinds[b]!.order
-      ),
-    [kindIds, taxonomy]
+      ).filter((kind) => articlesByKind[kind].length > 0),
+    [articlesByKind, kindIds, taxonomy]
   );
 
   return (

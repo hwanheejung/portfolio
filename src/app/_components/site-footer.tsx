@@ -12,15 +12,16 @@ export async function SiteFooter() {
       title: "Pages",
       links: [
         { label: "Home", href: "/" },
+        { label: "Work", href: "/work" },
         { label: "Articles", href: "/articles" },
         { label: "About", href: "/about" },
       ],
     },
     {
-      title: "Featured",
-      links: home.featuredContent.map((article) => ({
-        label: article.title,
-        href: `/articles/${article.slug}`,
+      title: "Selected work",
+      links: home.featuredWorks.map((work) => ({
+        label: work.title,
+        href: `/work/${work.slug}`,
       })),
     },
     {

@@ -37,7 +37,6 @@ const metadata = {
   draft: true,
   kind,
   topics,
-  experienceIds: [],
   spotlightIn: {},
   related: [],
 };

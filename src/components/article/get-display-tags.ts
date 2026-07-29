@@ -1,12 +1,13 @@
 import type {
   ArticleSummary,
   Taxonomy,
+  WorkSummary,
 } from "@/__generated__/content";
 
 import type { DisplayTag } from "./types";
 
 export function getDisplayTags(
-  article: ArticleSummary,
+  article: ArticleSummary | WorkSummary,
   taxonomy: Taxonomy,
 ) {
   const kind = taxonomy.kinds[article.kind];
