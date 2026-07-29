@@ -25,15 +25,6 @@ const withMDX = createMDX({
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
-  async redirects() {
-    return [
-      {
-        source: "/articles/feature-flag",
-        destination: "/work/feature-flag",
-        permanent: true,
-      },
-    ];
-  },
 };
 
 export default withMDX(nextConfig);

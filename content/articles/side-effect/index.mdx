@@ -1,0 +1,379 @@
+---
+title: Is an Invisible Side Effect Harmless?
+description: Exploring hidden side effects, referential transparency, and practical ways to keep unavoidable effects predictable.
+slug: side-effect
+date: 2025-02-26
+draft: false
+kind: technical-article
+topics:
+  - functional-programming
+spotlightIn: {}
+related: ["type-safe-pipe", "type-safe-curry"]
+thumbnail: "./images/thumbnail-editorial.png"
+---
+
+# 1. Is an Invisible Side Effect Harmless?
+
+> If a tree falls in the forest, but no one is around to hear it, does it still
+> make a sound?
+
+It sounds like a philosophical question, but it maps surprisingly well to
+programming: _if a side effect occurs and no one observes it, is it still a
+problem?_
+
+Avoiding side effects is a common goal in software design. Functional
+programming takes that idea further by favoring pure functions—functions that
+return the same output for the same input without changing external state.
+
+In practice, though, side effects are unavoidable. Fetching data and managing a
+cache are two obvious examples. We minimize them not because all side effects
+are inherently bad, but because _fewer side effects make code easier to reason
+about_.
+
+A function that silently changes external state may look pure when nothing
+currently reads that state. But the side effect is still there.
+
+As soon as another part of the program starts reading the changed state, _this
+can lead to an unexpected bug_. If the result also depends on call order, the
+function becomes harder to test and understand.
+
+To see why, let us start with referential transparency and the value of pure
+functions.
+
+# 2. Referential Transparency and Pure Functions
+
+A pure function generally satisfies two conditions:
+
+- It produces no side effects.
+- It always returns the same output for the same input.
+
+Purity is closely related to _referential transparency_.
+
+<Callout title="What is referential transparency?" emoji="☝️">
+  An expression is referentially transparent when replacing it with its
+  resulting value does not change the program's behavior.
+</Callout>
+
+If `f(x)` evaluates to `y`, replacing `f(x)` with `y` should not change the
+program's behavior.
+
+```javascript
+function calculateAverage(nums) {
+  let sum = 0;
+
+  for (const num of nums) {
+    sum += num;
+  }
+
+  return sum / nums.length;
+}
+
+const numbers = [1, 2, 4, 7, 11, 16, 22];
+const avg = calculateAverage(numbers);
+
+console.log("The average is:", avg); // The average is: 9
+```
+
+Here, `avg` stores the result of `calculateAverage(numbers)`. Replacing the
+function call with that result produces the same behavior:
+
+```javascript
+const numbers = [1, 2, 4, 7, 11, 16, 22];
+const avg = 9;
+
+console.log("The average is:", avg); // The average is: 9
+```
+
+The output does not change, so `calculateAverage(numbers)` is referentially
+transparent.
+
+A referentially transparent expression can be treated like a value. Once we
+know that `calculateAverage(numbers)` returns 9, we do not need to trace the
+function again every time it appears.
+
+_That is the practical value of referential transparency_: it lowers cognitive
+load by letting us understand each expression in isolation.
+
+# 3. The Risk of Hidden Side Effects
+
+<SectionHeading title="An Unobserved Mutation" />
+
+Consider a slightly different implementation:
+
+```javascript
+function calculateAverage(nums) {
+  sum = 0; // sum is declared outside the function
+
+  for (const num of nums) {
+    sum += num;
+  }
+
+  return sum / nums.length;
+}
+
+let sum;
+const numbers = [1, 2, 4, 7, 11, 16, 22];
+const avg = calculateAverage(numbers);
+
+console.log("The average is:", avg); // The average is: 9
+```
+
+Every call resets `sum` to zero and returns 9, so the function appears pure.
+But it still has a hidden side effect:
+
+- `sum` is declared outside the function.
+- `calculateAverage` mutates that external variable.
+- No other code currently reads `sum`, so the mutation is not visible.
+
+_The side effect has not disappeared. It is simply unobserved._
+
+<SectionHeading title="Is the Function Referentially Transparent?" />
+
+`calculateAverage(numbers)` returns the same value for the same input. In this
+program, replacing the call with 9 also seems safe because nothing else reads
+`sum`.
+
+The expression looks referentially transparent in this context, but the
+function is still impure. Its side effect just happens to be invisible—for now.
+
+<SectionHeading title="When the Hidden Effect Becomes Visible" />
+
+A hidden side effect may seem harmless in a small program. As the codebase
+grows, however, it creates several risks:
+
+- A maintenance change can suddenly make the side effect observable.
+- The function no longer behaves independently.
+- The program becomes harder to predict.
+
+At first, nothing else uses the global `sum`. A later function might:
+
+```javascript
+function calculateAverage(nums) {
+  sum = 0;
+
+  for (const num of nums) {
+    sum += num;
+  }
+
+  return sum / nums.length;
+}
+
+function calculateSum(nums) {
+  for (const num of nums) {
+    sum += num; // Reuses global state without resetting it
+  }
+
+  return sum;
+}
+
+let sum;
+const numbers = [1, 2, 4, 7, 11, 16, 22];
+
+const avg = calculateAverage(numbers);
+console.log("The average is:", avg); // 9
+
+const total = calculateSum(numbers);
+console.log("The total sum is:", total); // An unexpected value
+```
+
+After `calculateAverage` runs, `sum` still holds the accumulated total.
+`calculateSum` adds to that existing value and returns the wrong result. _A
+previously invisible side effect now changes the program's behavior._
+
+A reader may not immediately notice that `sum` is external. Making it local
+removes that ambiguity:
+
+```javascript
+function calculateAverage(nums) {
+  let sum = 0;
+
+  for (const num of nums) {
+    sum += num;
+  }
+
+  return sum / nums.length;
+}
+```
+
+Now `sum` belongs to the function, and `calculateAverage` no longer mutates
+external state.
+
+<SectionHeading title="Do Not Ignore Hidden Side Effects" />
+
+A side effect is not safe just because no one observes it today. Hidden effects
+make code harder to maintain and can surface as bugs when the surrounding code
+changes.
+
+_Pure, referentially transparent functions do not depend on a hidden execution
+history._ That makes them easier to read, test, and reuse.
+
+# 4. Side Effects for Performance
+
+Sometimes we introduce side effects deliberately for performance. Caching and
+memoization trade internal state for less repeated work. The question is how to
+make that trade without giving up predictability.
+
+<SectionHeading title="Caching with Global State" />
+
+```javascript
+let cache = [];
+
+function specialNumber(n) {
+  if (cache[n] !== undefined) {
+    return cache[n];
+  }
+
+  let x = 1;
+  let y = 1;
+
+  for (let i = 1; i <= n; i += 1) {
+    x += i % 2;
+    y += i % 3;
+  }
+
+  cache[n] = (x * y) / (n + 1);
+  return cache[n];
+}
+
+console.log(specialNumber(6)); // 4
+console.log(specialNumber(42)); // 22
+console.log(specialNumber(6)); // 4, returned from cache
+```
+
+The first call to `specialNumber(n)` computes a value. Later calls reuse the
+cached result. But this implementation also hides a side effect:
+
+- It mutates the global `cache`.
+- The function does not reveal that it changes external state.
+- Other code can change or reset the cache.
+
+Because external code can reset the cache, callers cannot know whether the next
+call will hit the cache or recompute the value:
+
+```javascript
+function resetCache() {
+  cache = [];
+}
+
+console.log(specialNumber(10)); // Computes the value
+resetCache();
+console.log(specialNumber(10)); // Computes it again
+```
+
+<SectionHeading title="Safer Caching with a Closure" />
+
+A closure keeps the mutable state private and prevents unrelated code from
+changing it directly:
+
+```javascript
+const specialNumber = (function memoization() {
+  const cache = {};
+
+  return function specialNumber(n) {
+    if (cache[n] !== undefined) {
+      return cache[n];
+    }
+
+    let x = 1;
+    let y = 1;
+
+    for (let i = 1; i <= n; i += 1) {
+      x += i % 2;
+      y += i % 3;
+    }
+
+    cache[n] = (x * y) / (n + 1);
+    return cache[n];
+  };
+})();
+
+console.log(specialNumber(6)); // 4
+console.log(specialNumber(42)); // 22
+console.log(specialNumber(6)); // 4, returned from cache
+```
+
+The cache is still mutable, but the rest of the program cannot access it. From a
+caller's perspective, the function still returns the same output for the same
+input.
+
+_When an optimization needs state, keep that state as local as possible._
+
+# 5. Managing Side Effects Safely
+
+We cannot always remove side effects, but we can make them _explicit,
+predictable, and controlled_.
+
+<SectionHeading title="Separate Pure Logic from Effects" />
+
+Start by separating pure data transformation from the code that performs the
+effect:
+
+```javascript
+function calculateTax(price) {
+  return price * 0.1;
+}
+
+function printTax(price) {
+  const tax = calculateTax(price);
+  console.log(`Tax for ${price} is ${tax}`);
+}
+
+printTax(100); // Tax for 100 is 10
+```
+
+`calculateTax` is pure and easy to test. `printTax` has a side effect, but its
+name and responsibility make that clear. _The effect is visible at the call
+site instead of being buried inside the calculation._
+
+<SectionHeading title="Return the Data an Effect Needs" />
+
+Another option is to return the data an effect needs instead of performing the
+effect immediately:
+
+```javascript
+function createLogMessage(price) {
+  return `Tax for ${price} is ${calculateTax(price)}`;
+}
+
+console.log(createLogMessage(100)); // Tax for 100 is 10
+```
+
+`createLogMessage` stays pure and independently testable. `console.log` happens
+explicitly at the program boundary.
+
+<SectionHeading title="Treat Effects as Execution Plans" />
+
+Functional programming can represent an effect as work to run later. An IO
+monad, for example, delays the operation until the program explicitly executes
+it:
+
+```javascript
+const logEffect = new IO(() => console.log("Test message"));
+
+// The test does not execute the effect.
+expect(typeof logEffect.effect).toBe("function");
+
+// The effect runs only when requested.
+logEffect.run();
+```
+
+A test can verify the planned effect without triggering `console.log`. _The
+effect still exists, but executing it becomes an explicit decision._
+
+<SectionHeading title="Constrain When Effects Run" />
+
+React's `useEffect` follows a similar principle: it moves side effects out of
+rendering and into a dedicated lifecycle. It does not eliminate effects, but it
+does give them a visible boundary and a predictable place to run.
+
+# 6. Visibility Matters More Than Disappearance
+
+> If a tree falls in the forest, but no one is around to hear it, does it still
+> make a sound?
+
+_Hiding a side effect does not make it harmless._ The best option is to design
+the code so that the effect cannot occur in the first place.
+
+When an effect is unavoidable, separate it from pure logic, keep mutable state
+as local as possible, and make the execution point explicit. _The goal is not
+to hide side effects, but to make them predictable and controllable._

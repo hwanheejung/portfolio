@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "b9e083fbb7601064",
+  "buildId": "5fcca30596c50547",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -148,11 +148,112 @@ export const content = {
   },
   "articleSlugs": [
     "why-setstate-is-asynchronous",
+    "side-effect",
     "type-safe-pipe",
     "type-safe-curry",
     "thinking-in-graph"
   ],
   "articlesBySlug": {
+    "side-effect": {
+      "title": "Is an Invisible Side Effect Harmless?",
+      "description": "Exploring hidden side effects, referential transparency, and practical ways to keep unavoidable effects predictable.",
+      "slug": "side-effect",
+      "date": "2025-02-26",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "functional-programming"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "type-safe-pipe",
+        "type-safe-curry"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/side-effect/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "1-is-an-invisible-side-effect-harmless",
+          "level": 1,
+          "title": "1. Is an Invisible Side Effect Harmless?"
+        },
+        {
+          "id": "2-referential-transparency-and-pure-functions",
+          "level": 1,
+          "title": "2. Referential Transparency and Pure Functions"
+        },
+        {
+          "id": "3-the-risk-of-hidden-side-effects",
+          "level": 1,
+          "title": "3. The Risk of Hidden Side Effects"
+        },
+        {
+          "id": "an-unobserved-mutation",
+          "level": 2,
+          "title": "An Unobserved Mutation"
+        },
+        {
+          "id": "is-the-function-referentially-transparent",
+          "level": 2,
+          "title": "Is the Function Referentially Transparent?"
+        },
+        {
+          "id": "when-the-hidden-effect-becomes-visible",
+          "level": 2,
+          "title": "When the Hidden Effect Becomes Visible"
+        },
+        {
+          "id": "do-not-ignore-hidden-side-effects",
+          "level": 2,
+          "title": "Do Not Ignore Hidden Side Effects"
+        },
+        {
+          "id": "4-side-effects-for-performance",
+          "level": 1,
+          "title": "4. Side Effects for Performance"
+        },
+        {
+          "id": "caching-with-global-state",
+          "level": 2,
+          "title": "Caching with Global State"
+        },
+        {
+          "id": "safer-caching-with-a-closure",
+          "level": 2,
+          "title": "Safer Caching with a Closure"
+        },
+        {
+          "id": "5-managing-side-effects-safely",
+          "level": 1,
+          "title": "5. Managing Side Effects Safely"
+        },
+        {
+          "id": "separate-pure-logic-from-effects",
+          "level": 2,
+          "title": "Separate Pure Logic from Effects"
+        },
+        {
+          "id": "return-the-data-an-effect-needs",
+          "level": 2,
+          "title": "Return the Data an Effect Needs"
+        },
+        {
+          "id": "treat-effects-as-execution-plans",
+          "level": 2,
+          "title": "Treat Effects as Execution Plans"
+        },
+        {
+          "id": "constrain-when-effects-run",
+          "level": 2,
+          "title": "Constrain When Effects Run"
+        },
+        {
+          "id": "6-visibility-matters-more-than-disappearance",
+          "level": 1,
+          "title": "6. Visibility Matters More Than Disappearance"
+        }
+      ]
+    },
     "thinking-in-graph": {
       "title": "Thinking in Graph",
       "description": "Moving beyond a REST-shaped GraphQL API toward node-based schemas, single-query patterns, and field-level resolver chains.",
@@ -554,6 +655,7 @@ export const content = {
       "date": "2026-07-24",
       "draft": false,
       "kind": "case-study",
+      "experienceId": "karrot",
       "topics": [
         "automation"
       ],
@@ -561,7 +663,6 @@ export const content = {
         "home": 1
       },
       "thumbnail": "./images/stakeholder-conversations.png",
-      "experienceId": "karrot",
       "thumbnailUrl": "/_content/works/feature-flag/images/stakeholder-conversations.png",
       "toc": [
         {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Translate Portfolio Article"
+  short_description: "Turn Korean drafts into polished English MDX articles"
+  default_prompt: "Use $translate-portfolio-article to turn this Korean draft into a polished portfolio article."

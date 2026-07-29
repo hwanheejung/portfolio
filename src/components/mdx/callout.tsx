@@ -30,14 +30,14 @@ const Callout = ({
   return (
     <aside
       className={cn(
-        "my-8 flex gap-3 rounded-[1.35rem] border p-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.07),0_16px_42px_rgb(0_0_0/0.1)] backdrop-blur-[20px] backdrop-saturate-145 md:gap-4 md:p-6 [@media(prefers-reduced-transparency:reduce)]:bg-card! [@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]! contrast-more:border-[#76767e]! contrast-more:bg-background!",
+        "my-8 flex gap-3 rounded-[1.35rem] border py-5 px-2 shadow-[inset_0_1px_0_rgb(255_255_255/0.07),0_16px_42px_rgb(0_0_0/0.1)] backdrop-blur-[20px] backdrop-saturate-145 md:gap-4 md:py-6 md:px-3 [@media(prefers-reduced-transparency:reduce)]:bg-card! [@media(prefers-reduced-transparency:reduce)]:[backdrop-filter:none]! contrast-more:border-[#76767e]! contrast-more:bg-background!",
         backgroundClasses[backgroundColor]
       )}
     >
       {emoji ? (
         <span
           aria-hidden="true"
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-white/7.5 text-lg shadow-[inset_0_1px_0_rgb(255_255_255/0.08),0_2px_8px_rgb(0_0_0/0.08)]"
+          className="grid size-9 shrink-0 place-items-center text-lg"
         >
           {emoji}
         </span>

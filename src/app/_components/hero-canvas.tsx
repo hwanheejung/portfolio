@@ -121,7 +121,7 @@ export function HeroCanvas() {
   return (
     <canvas
       aria-hidden="true"
-      className="h-full w-full touch-none"
+      className="absolute inset-0 h-full w-full touch-none"
       ref={canvasRef}
     />
   );

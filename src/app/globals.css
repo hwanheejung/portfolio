@@ -613,6 +613,7 @@ a {
 
 .article-prose :where(h1) {
   margin-top: 6rem;
+  margin-bottom: 2rem;
   font-size: clamp(2.5rem, 5vw, 3.25rem);
   letter-spacing: -0.035em;
   line-height: 1.1;

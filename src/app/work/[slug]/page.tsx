@@ -57,7 +57,7 @@ export default async function WorkDetailPage({ params }: WorkPageProps) {
     (item) => item.id === work.experienceId,
   );
   const { default: Content } = await import(
-    `../../../../content/experiences/${work.experienceId}/works/${slug}/index.mdx`
+    `../../../../content/experiences/${slug}/index.mdx`
   );
 
   return (

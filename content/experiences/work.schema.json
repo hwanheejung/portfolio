@@ -9,6 +9,7 @@
     "date",
     "draft",
     "kind",
+    "experienceId",
     "topics",
     "spotlightIn"
   ],
@@ -24,6 +25,7 @@
     "description": { "type": "string", "minLength": 1 },
     "thumbnail": { "type": "string", "pattern": "^\\./images/" },
     "kind": { "$ref": "#/definitions/slug" },
+    "experienceId": { "$ref": "#/definitions/slug" },
     "topics": {
       "type": "array",
       "uniqueItems": true,
