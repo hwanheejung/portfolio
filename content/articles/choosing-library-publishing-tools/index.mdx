@@ -1,0 +1,1011 @@
+---
+title: How Do You Choose Technologies for Publishing a Library?
+description: Understanding module systems, transpilers, bundlers, and build tools to choose a publishing stack deliberately.
+slug: choosing-library-publishing-tools
+date: 2025-08-25
+draft: false
+kind: technical-article
+topics:
+  - bundler
+spotlightIn: {}
+related: ["type-safe-curry", "type-safe-pipe"]
+thumbnail: "./images/thumbnail-editorial.png"
+---
+
+<Callout title="Presentation note" backgroundColor="green" emoji="🎙️">
+  Presented for the NAVER Cloud frontend study on August 25, 2025.
+</Callout>
+
+# Why I Chose This Topic
+
+Building a library or project always raises the same questions: How should code
+be packaged and deployed? How should dependencies be managed and conflicts
+avoided? Why are there so many module systems—CJS and ESM among them?
+
+Without the background, it is easy to paste a configuration file or copy a
+search result without being able to explain why Webpack is needed, why Vite is
+faster, or why Babel and TypeScript are commonly paired.
+
+To choose tools correctly, we need to understand why each tool appeared and
+which problem it tried to solve. That context lets us evaluate and choose tools
+critically for a project's own characteristics. This article follows the
+history of _module systems → transpilers → bundlers → build tools_, then turns
+to criteria for choosing among them.
+
+# Module Systems
+
+- JavaScript was originally used for small scripts attached to HTML.
+- Every variable was placed in the global scope, which caused conflicts and
+  unintended overwrites.
+- Large applications had no way to manage dependencies at all.
+- The need grew for a way to reuse code and extend it sustainably, which led to
+  the demand for module systems.
+  - This raised the question: “How should libraries and frameworks be reused?”
+
+<SectionHeading title="CommonJS (2009)" />
+
+> I want JavaScript to work universally outside the browser too.
+
+**Background**
+
+- There was a desire to use JavaScript outside the browser.
+- Node.js appeared, creating a need to run JavaScript in server and CLI
+  environments.
+- The goal was for JavaScript to work universally across environments.
+
+**Structure**
+
+- Synchronous calls with `require`.
+- The assumption that every dependency exists on the local disk.
+- In a server environment, `require` can therefore load immediately, making it
+  suitable for a filesystem-based environment.
+
+```js
+const fs = require("fs"); // Loaded synchronously.
+const data = fs.readFileSync("./data.txt", "utf-8");
+console.log(data);
+
+module.exports = { hello: "world" };
+```
+
+**How `require` works**
+
+1. Calling `require()` executes the module file.
+2. It stores `module.exports` as an object.
+3. A later `require()` returns the cached object.
+
+In other words, `require` passes a snapshot of a module's execution result.
+
+**Strengths**
+
+- Simple syntax and a low barrier to entry.
+- Synchronous calls can access the server file system immediately.
+- It became Node.js's default module system and the basis of npm.
+
+**Limitations**
+
+1. _Disadvantage in the browser environment_
+   - Browsers cannot read files directly from the local disk, so they need
+     network requests.
+   - But CJS uses synchronous calls: waiting for the network blocks all
+     execution.
+   - The result is slower loading and worse UX.
+2. _Disadvantage for tree-shaking_
+   - `require` can execute anywhere in code, including inside `if` and `for`.
+   - This makes static analysis difficult, so unused code is included in the
+     bundle too.
+   - Files become larger when distributed to the browser.
+3. _Vulnerability to circular references_
+   - `require` loads the whole module as an object snapshot.
+   - In a circular reference, an incomplete object can be passed before loading
+     finishes.
+   - The result is bugs that are difficult to predict.
+
+```js
+// a.js
+const b = require("./b");
+console.log("b in a:", b);
+module.exports = { fromA: "A" };
+
+// b.js
+const a = require("./a");
+console.log("a in b:", a);
+module.exports = { fromB: "B" };
+```
+
+<Toggle summary="Execution result">
+  ```text
+    a in b: {}
+    b in a: { fromB: "B" }
+  ```
+</Toggle>
+
+**Significance**
+
+- It was the first de facto standard module system optimized for server
+  environments.
+- It became the foundation of the npm ecosystem.
+- However, it proved increasingly inconvenient in browsers, prompting later
+  module systems such as AMD, UMD, and ES Modules.
+
+<SectionHeading title="AMD (2009)" />
+
+> If we are going to use it in the browser anyway, should it not support
+> asynchronous loading?
+
+**Background**
+
+- CommonJS was efficient on servers but limited in browsers.
+  - `require` was synchronous, blocking execution until a network request
+    finished.
+  - Because network latency is unavoidable in browsers, this seriously harmed
+    the user experience.
+- There was a desire to use modules safely and efficiently in browsers too.
+- Discussions around adding asynchronous support to CJS eventually split off,
+  leading to AMD (Asynchronous Module Definition).
+
+**Structure**
+
+> We are going to be browser-friendly.
+
+- _Support asynchronous loading._
+- Declare modules and dependencies as an array; run the callback when loading
+  is complete.
+- In other words, the goal is to _load only the modules needed at the moment
+  they are needed._
+
+```js
+// Define a module.
+define(["jquery", "underscore"], function ($, _) {
+  return {
+    greet: function () {
+      console.log("Hello with jQuery:", $.fn.jquery);
+    },
+  };
+});
+
+// Use the module.
+require(["myModule"], function (myModule) {
+  myModule.greet();
+});
+```
+
+**How it works**
+
+1. Define a module with `define()`.
+   - Provide a dependency array and a callback function.
+   - The callback parameters are injected after the dependencies have loaded.
+2. Load a module with `require()`.
+   - Request the specified dependencies asynchronously in the background.
+   - Run the callback once all of them are ready.
+
+<Callout title="The role of a module loader, such as RequireJS" emoji="☝️">
+  - Browsers originally had only the <code>&lt;script&gt;</code> tag.
+  - RequireJS dynamically inserts <code>&lt;script&gt;</code> tags to handle
+    network requests asynchronously.
+  - It manages the dependency graph and runs the callback when all modules are
+    ready.
+  - In other words, it is the runtime engine that makes AMD syntax executable.
+</Callout>
+
+→ Network requests are handled asynchronously, so they do not block browser
+loading.
+
+<Columns>
+  <Column>
+    **CJS (synchronous `require`)**
+
+    <Mermaid
+      chart={`sequenceDiagram
+
+participant Browser
+participant Network
+participant JS
+JS->>Browser: require("utils.js")
+Browser->>Network: Request utils.js
+Network-->>Browser: Respond with utils.js
+Browser-->>JS: Return utils.js code
+Note over JS: JavaScript is blocked until the response arrives
+JS->>JS: Run later code`}
+/>
+
+  </Column>
+  <Column>
+    **AMD (asynchronous `require`)**
+
+    <Mermaid
+      chart={`sequenceDiagram
+
+participant Browser
+participant Network
+participant JS
+JS->>Browser: require(["utils.js"], callback)
+Browser->>Network: Request utils.js asynchronously
+Note over JS: JavaScript and UI rendering continue
+Network-->>Browser: Respond with utils.js
+Browser-->>JS: Run callback with utils
+JS->>JS: Use utils`}
+/>
+
+  </Column>
+</Columns>
+
+**Strengths**
+
+- It is optimized for browser environments, supporting asynchronous requests
+  and control over loading time.
+- Loading only the required modules reduces the initial loading time.
+- Dependencies are declared explicitly as an array.
+
+**Limitations**
+
+1. _Verbose syntax_
+   - Wrapping code in `define` and `require` reduces readability.
+   - More nested functions and dependency arrays make the developer experience
+     worse.
+2. _Ecosystem limitations_
+   - Poor Node.js compatibility makes it difficult to coexist with CommonJS.
+   - This creates a divided environment in which Node.js uses CommonJS while
+     browsers use AMD.
+3. _Tree-shaking limitations, which also affect CommonJS_
+   - Although dependencies are explicit, they are still resolved at runtime,
+     limiting static analysis.
+
+<Toggle summary="Why is tree-shaking limited in AMD?">
+**1. The premise of tree-shaking**
+
+- **Static analysis** must be able to determine which modules are used where
+  without running the code.
+- With ES Modules:
+  - `import { foo } from "./utils.js"`
+  - A compiler or bundler can immediately see before execution that only `foo`
+    is used.
+  - It can therefore remove other exports such as `bar` and `baz`.
+
+**2. AMD's problem**
+
+AMD loading is asynchronous and callback-based, so dependencies are resolved
+at runtime.
+
+```js
+define(["utils"], function (utils) {
+  if (someCondition) {
+    utils.foo();
+  } else {
+    utils.bar();
+  }
+});
+```
+
+- From this code alone, static analysis cannot determine which function will be
+  used.
+- Whether only `utils.foo` is used or `utils.bar` is also needed depends on a
+  runtime condition.
+- A bundler therefore has no safe choice but to include the entire `utils`
+  module.
+
+**3. How ESM differs**
+
+```js
+import { foo } from "./utils.js";
+foo();
+```
+
+- ESM requires `import` declarations to appear only at the top level of a file.
+- Thanks to this syntactic restriction, a compiler can know exactly which
+  modules are needed through static analysis.
+- This is why tree-shaking works accurately and effectively with ESM.
+
+</Toggle>
+
+**Significance**
+
+- AMD was the first attempt to solve browser-centered module-loading problems
+  in practice.
+- Its best-known implementation is [RequireJS](https://requirejs.org/).
+- However, its complex syntax and server incompatibility made it a transitional
+  solution that led to UMD and ES Modules.
+- Ultimately, it was an important turning point that established the concept of
+  asynchronous module loading.
+
+<SectionHeading title="UMD (2009–2010)" />
+
+> CJS and AMD are both great.
+
+**Background**
+
+- After 2009, JavaScript module environments were in a state of confusion.
+  - Servers using Node.js adopted CommonJS.
+  - Browsers spread AMD through RequireJS.
+- From a library author's perspective:
+  - “I want my library to work in Node.js, in browsers, and in AMD
+    environments.”
+  - But there was no standard, and each environment imposed a different
+    approach, making distribution a headache.
+- This led to UMD (Universal Module Definition).
+
+**Structure**
+
+UMD loads modules for every environment through conditional branches and a
+factory pattern.
+
+```js
+(function (root, factory) {
+  if (typeof define === "function" && define.amd) {
+    // AMD
+    define(["jquery", "underscore"], factory);
+  } else if (typeof exports === "object") {
+    // CommonJS
+    module.exports = factory(require("jquery"), require("underscore"));
+  } else {
+    // Browser global
+    root.myLib = factory(root.$, root._);
+  }
+})(this, function ($, _) {
+  return {
+    greet: function () {
+      console.log("Hello from UMD!");
+    },
+  };
+});
+```
+
+**How it works**
+
+1. The code checks the execution environment at the top level.
+   - If `define.amd` exists, it runs as AMD.
+   - If an `exports` object exists, it runs as CommonJS (Node.js).
+   - If neither exists, it registers as a browser global (`window.myLib`).
+2. The module body lives in a factory function.
+   - The same code logic runs in every environment.
+   - Only the environment-specific wrapper differs.
+
+_A library written once can therefore run anywhere._
+
+**Significance**
+
+- UMD was a practical solution that made library distribution possible during
+  the chaotic conflict among module standards.
+- Bundlers such as Webpack and Rollup still support UMD as a fallback output
+  format today.
+- However, after ES6 modules appeared in 2015, UMD gradually became relevant
+  mainly for its historical significance.
+- In short, _UMD is a bridge._
+  - It served as a temporary bridge connecting CommonJS, AMD, and browser-global
+    environments.
+
+<SectionHeading title="ES6 Modules (2015)" />
+
+> The world is too chaotic. I am the standard now.
+
+**Background**
+
+- CJS, AMD, and UMD coexisted, confusing both developers and library authors.
+- Browsers supported only the `<script>` tag, so global-scope pollution remained
+  a problem.
+- The need grew to standardize modules within JavaScript itself.
+- For that reason, ECMAScript 2015 (ES6) introduced an official module system.
+
+**Structure**
+
+- Concise syntax, a static structure, and a unified approach for both browsers
+  and servers.
+
+```js
+// utils.js
+export function foo() {
+  console.log("foo");
+}
+export const bar = 42;
+
+// main.js
+import { foo } from "./utils.js";
+foo();
+```
+
+- It introduced the `import` and `export` keywords.
+- They must be declared at the top level of a file, enabling static analysis and
+  making tree-shaking more effective.
+- Browsers also support ESM natively through `<script type="module">`.
+
+**How it works**
+
+1. _Static loading_
+   - `import` statements are parsed before execution, so the dependency graph
+     is determined in advance.
+   - The dependency graph is therefore known at build time.
+   - This allows bundlers and engines to perform tree-shaking and code splitting
+     safely.
+2. _Reference bindings_
+   - In CommonJS, `require` returns an object containing a snapshot of the
+     execution result.
+   - In ESM, imports bind references to the actual variables and functions, so
+     they reflect the latest values.
+   - This also makes circular references relatively safer because the
+     references remain live.
+3. _Dynamic loading_
+   - The `import()` syntax supports dynamic imports.
+
+```js
+if (user.isAdmin) {
+  const { adminPanel } = await import("./admin.js");
+  adminPanel();
+}
+```
+
+   - The module is loaded only when it is needed at runtime.
+   - `import()` is Promise-based and asynchronous, returning the module object
+     once the network request finishes.
+   - In other words, code can be loaded only at the moment it is needed.
+   - This enables code splitting and lazy loading.
+4. _The browser itself is the module loader_
+   - With AMD, browsers could not understand modules, so a module loader such as
+     RequireJS was required.
+   - With ESM, browser engines such as V8 and SpiderMonkey parse `import` and
+     `export` directly, and when a browser encounters
+     `<script type="module">`, it automatically handles the network requests
+     for its dependencies.
+   - The browser itself therefore performs the role of a module loader.
+
+**Limitations**
+
+1. _Compatibility issues with CommonJS_
+   - Most of the npm ecosystem was based on CommonJS.
+   - Node.js introduced ESM support relatively late, and it stabilized after
+     2020.
+   - Mixing `require` and `import` can cause conflicts.
+2. _Delayed initial browser support_
+   - Older browsers did not support ESM at first, requiring Babel and a bundler.
+   - Most browsers now support it natively.
+
+**Significance**
+
+- ESM became the official module standard and resolved the confusion of the
+  previous generation.
+- Modern frontend frameworks and libraries—including React, Vue, and Next.js—
+  are all based on ESM.
+- Node.js also adopted ESM, while CommonJS is gradually becoming legacy.
+- Browser engines such as V8, SpiderMonkey, and JavaScriptCore support
+  `import` and `export` natively, so a separate module loader is no longer
+  required.
+
+# Transpilers
+
+> ES6 syntax is too new for older browsers to understand.
+
+<SectionHeading title="Babel (2014–)" />
+
+**Background**
+
+- ES6 introduced new syntax such as `class`, `let`/`const`, and
+  `import`/`export` in 2015.
+- However, browsers at the time did not support this syntax.
+- Developers wanted to use the latest syntax while still supporting older
+  browsers in production.
+
+**How it works**
+
+Babel parses code into an Abstract Syntax Tree (AST), transforms it, and then
+outputs JavaScript again.
+
+<Columns>
+  <Column>
+    ```js
+    // ES6+
+    const greet = () => console.log("hi");
+    ```
+  </Column>
+  <Column>
+    ```js
+    // ES5
+    var greet = function () {
+      console.log("hi");
+    };
+    ```
+  </Column>
+</Columns>
+
+**Effects**
+
+- Developers can use the latest syntax, and Babel converts it into code that is
+  compatible with older browsers.
+- This provides both productivity and compatibility.
+- When combined with a polyfill such as `core-js`, it can also support modern
+  APIs.
+
+<Toggle summary="What is a polyfill?">
+
+- A transpiler such as Babel transforms syntax.
+  - For example, it converts `() => {}` into `function () {}`.
+- However, it cannot transform new built-in APIs.
+  - Examples include `Promise`, `Array.prototype.includes`, and `fetch`.
+- Older browsers, especially IE11, do not provide these modern APIs at all.
+- This is why polyfills appeared.
+- A polyfill is code that implements and fills in a modern feature that a
+  particular environment, browser, or runtime does not support.
+
+</Toggle>
+
+```js
+// babel.config.js
+module.exports = {
+  presets: [
+    [
+      "@babel/preset-env",
+      {
+        useBuiltIns: "usage", // Insert a polyfill only when needed.
+        corejs: 3,
+      },
+    ],
+  ],
+};
+```
+
+**Significance**
+
+- Babel serves as a language translator, creating a foundation that allows
+  developers to focus on DX without worrying about compatibility.
+- It also made experimental language extensions practical, preparing the ground
+  for languages such as TypeScript to become widely adopted.
+
+<SectionHeading title="TypeScript (2012–, broadly adopted from 2016)" />
+
+**Background**
+
+- Once Babel solved the problem of transforming modern syntax, developers wanted
+  to go one step further.
+- They wanted to move beyond merely writing modern syntax and develop safely in
+  large projects.
+- Microsoft created TypeScript to meet that need.
+
+**Characteristics**
+
+- It adds a type system that can catch type errors before runtime.
+- It also works as a transpiler, converting TypeScript to JavaScript.
+  - Type information is removed during the conversion.
+  - The final output runs as plain JavaScript.
+
+```ts
+// TypeScript
+function add(a: number, b: number): number {
+  return a + b;
+}
+```
+
+↓ Transformed by `tsc` ↓
+
+```js
+// JavaScript
+function add(a, b) {
+  return a + b;
+}
+```
+
+**Effects**
+
+- It provides type safety and modern syntax at the same time.
+- It improves maintainability and extensibility in large collaborative
+  projects.
+- It has now become a standard language for frontend development.
+
+**Significance**
+
+- Babel created an environment in which developers could use modern syntax
+  safely.
+- On top of that environment, TypeScript added a language-level tool that keeps
+  development reliable as a project grows.
+
+<SectionHeading title="Combining tsc and Babel" />
+
+- **Using `tsc` alone**
+  - It checks types and converts TypeScript to JavaScript.
+  - It is sufficient for a Node.js backend or when targeting only modern
+    browsers.
+  - Polyfills must be added manually, for example by importing `core-js`.
+- **Using Babel alone with the TypeScript preset**
+  - Babel can convert TypeScript to JavaScript by simply removing types.
+  - Builds are fast.
+  - But it does not perform type checking.
+- **Combining `tsc` and Babel, common in large frontend applications**
+  - `tsc --noEmit` checks types only and does not output JavaScript.
+  - Babel handles actual code transformation and polyfill insertion.
+  - This combines type safety, browser compatibility, fast builds, and a rich
+    ecosystem.
+
+<Table
+  headerRow
+  columns={["Combination", "Strengths", "Limits", "Typical use"]}
+  rows={[
+    [
+      "tsc alone",
+      "Simple: type checking and transpilation together",
+      "No polyfills; older-browser support is manual",
+      "Node.js, small projects",
+    ],
+    [
+      "Babel alone",
+      "Fast builds; strong JSX and plugin support",
+      "No type checking",
+      "JavaScript-only projects, CRA",
+    ],
+    [
+      "tsc + Babel",
+      "Type checking, browser compatibility, and optimization",
+      "A more complex build pipeline",
+      "Large frontend applications such as React and Next.js",
+    ],
+  ]}
+/>
+
+[Guides: Babel](https://nextjs.org/docs/pages/guides/babel)
+
+# Bundlers
+
+> Their main purpose is to prepare code for use in a production environment.
+
+**Background**
+
+- Module systems made it easier to split code.
+- However, this created problems when deploying an application:
+  - As the number of modules increases, the number of network requests also
+    increases.
+  - Browsers cache and load files per request. More files therefore mean more
+    requests, more work for the browser to manage its cache, and slower initial
+    loading.
+
+→ This created a need for a tool that analyzes the dependency graph and combines
+modules into one bundle, or several optimized bundles.
+
+**How it works**
+
+1. _Create a dependency graph_
+   - Start from an entry file and trace every `import` and `require`.
+   - Determine the relationships among all project modules as a tree.
+2. _Transform code_
+   - Integrate transpilers such as Babel and `tsc` to convert all modules into
+     standardized JavaScript.
+3. _Bundle by merging_
+   - Merge related modules into a single JavaScript file or optimized chunks.
+4. _Optimize_
+   - Tree-shaking removes unused code.
+   - Code splitting separates code so it can be loaded only when needed.
+   - Minification and obfuscation reduce code size.
+
+<Columns>
+  <Column>
+    **1. Dependency graph: modules are distributed**
+
+    <Mermaid
+      chart={`graph TD
+        A["A.js (entry)"] --> B["B.js"]
+        A -. await import .-> C["C.js (dynamic import)"]
+        B --> D["D.js"]
+        C --> E["E.js"]`}
+    />
+
+  </Column>
+  <Column>
+    **1. The bundler analyzes the dependency graph**
+
+    <Mermaid
+      chart={`graph TD
+        subgraph Dependency Graph
+          A["A.js"] --> B["B.js"]
+          A --> C["C.js"]
+          B --> D["D.js"]
+          C --> E["E.js"]
+        end
+        G["Analyze dependency graph"]
+        A --> G
+        B --> G
+        C --> G
+        D --> G
+        E --> G`}
+    />
+
+  </Column>
+  <Column>
+    **3. Final bundling result**
+
+    _If there were one bundle:_
+
+    <Mermaid
+      chart={`graph TD
+        subgraph Bundle.js
+          A["A"]
+          B["B"]
+          C["C"]
+          D["D"]
+          E["E"]
+        end`}
+    />
+
+    _With a dynamic import: code splitting_
+
+    <Mermaid
+      chart={`graph TD
+        subgraph MainBundle.js
+          A["A (used exports only)"]
+          B["B (used exports only)"]
+          D["D (used exports only)"]
+        end
+        subgraph Chunk-C.js
+          C["C (used exports only)"]
+          E["E (used exports only)"]
+        end
+        A --> B
+        B --> D
+        A -. dynamic import .-> C
+        C --> E`}
+    />
+
+  </Column>
+</Columns>
+
+<SectionHeading title="The Debate After the Arrival of HTTP/2" />
+
+**The HTTP/1.1 era**
+
+- Browsers limited simultaneous connections per domain to about six.
+- More files meant sequential network delays (Head-of-Line Blocking).
+- Reducing the number of files was therefore itself a performance
+  optimization.
+  - Bundling JavaScript, CSS, and images into a single file became an industry
+    standard.
+
+**HTTP/2 arrives (2015)**
+
+- HTTP/2 introduced multiplexing to improve performance.
+  - A single TCP connection can process multiple requests and responses at the
+    same time.
+  - It reduces Head-of-Line Blocking caused by request order.
+  - In other words, having many files is no longer as costly.
+- It also introduced additional features:
+  - Header Compression reduces the cost of repeated headers.
+  - Server Push allows a server to send resources before the client requests
+    them.
+
+> If small files can arrive quickly in parallel, do we need bundling at all?
+
+**Counterarguments**
+
+- _Browser caching efficiency_
+  - When files are divided into small units, each file can be cached
+    independently.
+  - However, splitting them into too many small units increases the cost of
+    cache management.
+  - Bundling can separate common code, such as vendor libraries, from frequently
+    changing application code, which is more efficient.
+- _Transfer overhead_
+  - Even though HTTP/2 supports multiplexing, every request still carries header
+    and metadata costs.
+  - When thousands of files are requested, that overhead cannot be ignored.
+- _Execution-time optimization_
+  - With many JavaScript files, network transfer is not the only problem.
+  - Parsing and execution costs also burden the browser.
+  - Large applications therefore still need optimized bundles divided through
+    code splitting.
+- _Limitations before HTTP/3 and QUIC_
+  - HTTP/2 is fundamentally based on TCP, so packet loss can delay all streams.
+  - Reducing the number of requests through bundling also reduces this risk.
+
+**A compromise**
+
+- _In the past:_ bundle everything into one file to optimize the initial load.
+- _After HTTP/2:_
+  - Instead of one excessively large bundle, use code splitting by page or
+    route.
+  - Separate common libraries into their own chunks to maximize caching.
+  - In other words, receive only the code needed at the moment it is needed.
+- Webpack, Rollup, and Vite all support this pattern.
+
+<SectionHeading title="Webpack (2012–)" />
+
+**Background**
+
+- As large web applications grew, Webpack appeared to combine numerous modules,
+  including CSS, images, and JavaScript, into a single application unit.
+- “Everything is a module”: it treats not only JavaScript but also CSS and
+  images as modules.
+
+**Characteristics**
+
+- Loaders process non-JavaScript assets such as CSS, images, and fonts.
+- Its powerful plugin system can customize the entire build pipeline.
+- It includes developer conveniences such as Hot Module Replacement (HMR).
+
+**Strengths**
+
+- Optimized for large web applications.
+- A vast ecosystem of plugins and loaders.
+- Extensive references accumulated over its long history.
+
+**Limitations**
+
+- Complex configuration, often called “Webpack hell.”
+- Relatively slow bundling.
+
+<SectionHeading title="Rollup (2015–)" />
+
+**Background**
+
+- While Webpack focuses on web applications, Rollup specializes in publishing
+  libraries.
+- It was designed for the era of ES Modules.
+
+**Characteristics**
+
+- Its ESM foundation makes static analysis effective and gives it excellent
+  tree-shaking performance.
+- It produces small, lightweight bundles with simple configuration.
+- It supports multiple output formats, including ESM, CJS, and UMD.
+
+**Strengths**
+
+- Extremely effective tree-shaking.
+- Removes unnecessary code and produces small bundles.
+- Well suited to publishing libraries; the cores of React and Vue are also
+  built with Rollup.
+
+**Limitations**
+
+- Better suited to libraries than to web applications.
+- Application-development features such as HMR and a development server require
+  additional setup.
+
+<SectionHeading title="Parcel (2017–)" />
+
+**Background**
+
+- Parcel appeared as a “zero-configuration bundler” in response to criticism
+  that Webpack configuration was too complex.
+
+**Characteristics**
+
+- It requires no configuration by default and runs with only
+  `parcel index.html`.
+- It automatically detects file types and handles Babel, PostCSS, and image
+  optimization.
+- It uses multiple CPU cores for fast builds.
+- It supports HMR by default.
+
+**Strengths**
+
+- Zero configuration makes it quick to start.
+- It is beginner-friendly and effective for prototypes.
+- Fast build speed.
+
+**Limitations**
+
+- Its plugin ecosystem is not as large as those of Webpack and Rollup.
+- It provides less fine-grained control for large projects.
+
+In short:
+
+- **Webpack:** large web applications, with industry-standard flexibility.
+- **Rollup:** library publishing, with excellent tree-shaking and small bundles.
+- **Parcel:** fast starts and prototypes, with almost no configuration.
+
+# Build Tools
+
+> Bundlers focus on combining and optimizing code. Build tools are integrated
+> environments spanning development, testing, and building.
+
+**Background**
+
+- Their scope expanded beyond simple bundling and transpilation.
+- They became all-in-one tools that include development servers, hot reloading
+  through HMR, testing, and deployment.
+
+<SectionHeading title="Vite (2020–)" />
+
+- Native ESM support lets browsers load modules directly.
+- Its development server starts quickly without bundling, using `import` as-is.
+- Production builds use Rollup, retaining stability and optimization.
+- Fast HMR remains efficient even in large projects.
+
+_Keyword: fast development server + Rollup-based build._
+
+<SectionHeading title="Turbopack (2022–, the next generation of Webpack)" />
+
+- [Turbopack](https://nextjs-ko.org/docs/architecture/turbopack) is built by the
+  Next.js team at Vercel and implemented in Rust as a successor to Webpack.
+- Incremental bundling builds only changed parts, enabling very fast HMR.
+- Designed with large application scale in mind.
+- It is still beta, but is becoming the next-generation Next.js build tool.
+
+_Keyword: Webpack's flexibility + Rust-based speed._
+
+<SectionHeading title="esbuild (2020–, Go-based)" />
+
+- A very fast bundler and build tool written in Go; multithreading makes it tens
+  to hundreds of times faster.
+- Optimized for simple bundling and transpilation.
+- More often used inside a toolchain than as the complete tool for a large app;
+  Vite itself uses esbuild internally.
+
+_Keyword: maximum speed, often embedded in a toolchain._
+
+<SectionHeading title="Rsbuild" />
+
+- An Rspack-based build tool.
+- Its partial compatibility with Webpack APIs and configuration lowers the
+  migration cost.
+- A `webpack → rspack/rsbuild` move can improve build speed through Rust.
+
+<Toggle summary="How can we improve build speed in a large service?">
+
+1. **Replace the bundler or transpiler.**
+
+<Table
+  headerRow
+  columns={["Existing", "Replacement", "Expected improvement"]}
+  rows={[
+    ["Webpack", "Rspack, Turbopack, esbuild", "5–10×"],
+    ["Babel", "SWC, esbuild", "20–70×"],
+    ["Terser", "SWC minify, esbuild", "10×+"],
+  ]}
+/>
+
+Rsbuild (Rspack + SWC) is a representative combination.
+
+2. **Use a caching strategy.**
+   - Rebuild only changed files.
+   - Cache the `node_modules` and `.cache` directories in CI.
+3. **Use parallel processing.**
+   - Run TypeScript type checking in parallel.
+
+```ts
+// Run TypeScript type checking in parallel.
+pluginTypeCheck({
+  tsCheckerOptions: {
+    async: true, // Run the build and type checking in parallel.
+    typescript: {
+      memoryLimit: 8192,
+    },
+  },
+});
+```
+
+</Toggle>
+
+<Toggle summary="How can we reduce bundle size?">
+
+- Use libraries that export ESM because they are friendlier to tree-shaking.
+  - Replace `lodash` with `es-toolkit`, for example.
+
+</Toggle>
+
+# Conclusion
+
+<SectionHeading title="1. api-recorder: A Library with a DevTool UI" />
+
+**Characteristics**
+
+- Developers debug and record while viewing a DevTool UI in the browser.
+- Real-time development convenience, including HMR and a development server,
+  matters.
+- The UI is likely to use a frontend stack such as React and Tailwind.
+
+**Technology choice**
+
+- **Vite:** a fast development server, HMR, and a Rollup-based production build.
+- Both development and deployment can be efficient.
+
+→ Choosing the **Vite build tool** is appropriate.
+
+<SectionHeading title="2. e2e-autogen: A CLI-Centered Library" />
+
+**Characteristics**
+
+- It has no DevTool UI and runs only as a CLI.
+- It does not need HMR or a development server for local execution.
+- For publishing, Node.js-oriented ESM/CJS bundles are enough rather than a
+  browser bundle.
+
+**Technology choice**
+
+- **Rollup alone:** dual ESM/CJS output, tree-shaking, and lightweight bundling.
+- Keep configuration simple: `rollup.config.js` + TypeScript → npm publish.
+
+→ The **Rollup bundler alone** is enough.

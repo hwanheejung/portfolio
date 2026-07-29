@@ -397,10 +397,8 @@ PartialTuple<[number, string, boolean]>
 → [number?, string?, boolean?]
 ```
 
-<details className="article-toggle">
-  <summary>A closer look at each recursive step</summary>
-  <div className="article-toggle-content">
-    The initial call splits `[number, string, boolean]` into `number` and
+<Toggle summary="A closer look at each recursive step">
+  The initial call splits `[number, string, boolean]` into `number` and
     `[string, boolean]`, then appends `number?` to the accumulator.
 
     ```typescript
@@ -422,13 +420,10 @@ PartialTuple<[number, string, boolean]>
     An empty `Params` tuple reaches the base case and returns the accumulated
     optional tuple.
 
-  </div>
-</details>
+</Toggle>
 
-<details className="article-toggle">
-  <summary>The TypeScript syntax behind PartialTuple</summary>
-  <div className="article-toggle-content">
-    *Conditional types*
+<Toggle summary="The TypeScript syntax behind PartialTuple">
+  *Conditional types*
 
     `extends` checks whether a type matches a constraint:
 
@@ -455,8 +450,7 @@ PartialTuple<[number, string, boolean]>
     `RemainingParams`. The `[Head, ...Tail]` pattern also ensures that the tuple
     contains at least one element before the recursive branch runs.
 
-  </div>
-</details>
+</Toggle>
 
 # 4. Requiring at Least One Argument
 

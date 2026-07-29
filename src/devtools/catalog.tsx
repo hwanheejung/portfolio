@@ -9,6 +9,7 @@ import { Numbering } from "@/components/mdx/numbering";
 import { PointGrid } from "@/components/mdx/point-grid";
 import { SectionHeading } from "@/components/mdx/section-heading";
 import { Table } from "@/components/mdx/table";
+import { Toggle } from "@/components/mdx/toggle";
 
 type CalloutBackground = NonNullable<
   ComponentProps<typeof Callout>["backgroundColor"]
@@ -260,6 +261,35 @@ export const mdxComponentCatalog: MdxComponentDefinition[] = [
           ["Rendering", "All at once", "In smaller units"],
         ]}
       />
+    ),
+  },
+  {
+    name: "Toggle",
+    description: "Hide supporting detail behind an expandable summary.",
+    fields: [
+      {
+        key: "summary",
+        label: "Summary",
+        type: "text",
+        initialValue: "Why does this matter?",
+      },
+      {
+        key: "content",
+        label: "Content",
+        type: "textarea",
+        initialValue: "Add the supporting detail here.",
+      },
+    ],
+    createSnippet: (values) =>
+      `<Toggle summary=${quote(
+        values.summary?.trim() || "Why does this matter?",
+      )}>\n  ${
+        values.content?.trim() || "Add the supporting detail here."
+      }\n</Toggle>`,
+    renderPreview: (values) => (
+      <Toggle summary={values.summary?.trim() || "Why does this matter?"}>
+        {values.content?.trim() || "Add the supporting detail here."}
+      </Toggle>
     ),
   },
   {

@@ -7,11 +7,13 @@ import { Chart } from "./chart";
 import { Column, Columns } from "./columns";
 import { Figure } from "./figure";
 import { Metric } from "./metric";
+import { Mermaid } from "./mermaid";
 import { Numbering } from "./numbering";
 import { PointGrid } from "./point-grid";
 import { Quote } from "./quote";
 import { SectionHeading } from "./section-heading";
 import { Table } from "./table";
+import { Toggle } from "./toggle";
 import { WhiteText } from "./white-text";
 import { createHeadingId } from "@/lib/content/toc";
 
@@ -27,11 +29,13 @@ const baseMdxComponents: MDXComponents = {
   Columns,
   Figure,
   Metric,
+  Mermaid,
   Numbering,
   PointGrid,
   blockquote: Quote,
   SectionHeading,
   Table,
+  Toggle,
   em: WhiteText,
 };
 

@@ -5,6 +5,24 @@ description: Translate Korean technical drafts, notes, or Notion pages into natu
 
 # Translate Article
 
+## Scope Boundary: Articles, Not Works
+
+This skill is for **Articles**: authored essays, technical notes, and translated
+knowledge writing under `content/articles`. It is not a case-study or portfolio
+editing workflow.
+
+- Do not optimize an Article for brevity, skimmability, narrative efficiency,
+  or a portfolio audience unless the user explicitly requests that editorial
+  work.
+- Do not apply case-study practices such as removing repetition, synthesizing
+  findings, changing the section sequence, or replacing prose with summary
+  bullets.
+- Article structure is part of the source. Preserve its sentences, emphasis,
+  lists, diagrams, and rhetorical pacing.
+- For a **Work** or case study under `content/works`, use
+  `case-study-principle` instead. Do not use this translation skill as a basis
+  for rewriting it.
+
 Turn Korean source material into natural English without turning it into a
 different article. Preserve the author's content and rhetoric; improve only the
 English expression and the MDX presentation unless the user explicitly asks for
@@ -14,6 +32,20 @@ editorial restructuring.
 
 Treat fidelity as more important than polish.
 
+- **Never compress content.** Preserve every source sentence, list item,
+  nested list item, example, code block, table row, diagram, callout, detail
+  block, and conclusion unless the user explicitly names the exact material to
+  remove.
+- **Never change structure or order.** Keep the source's chapter order,
+  subsection order, paragraph order, list hierarchy, and rhetorical sequence.
+  A source sequence such as “background → structure → how it works → strengths
+  → limitations → significance” must remain that sequence in the article.
+- **Never reinterpret the author's intent.** Do not turn a detailed claim into
+  a summary, a list into prose, several causes into one cause, or an example
+  into a generalized explanation.
+- **Do not move a sentence across source blocks.** For example, an explanation
+  from “How it works” must not be placed in “Background” or “Structure,” even
+  if it would read smoothly there.
 - Preserve the source's claims, metaphors, questions, examples, uncertainty,
   tone, and order of ideas.
 - Translate headings by preserving their central concept and rhetorical role.
@@ -23,10 +55,9 @@ Treat fidelity as more important than polish.
 - Do not add principles, caveats, conclusions, examples, or corrections that
   the source does not contain. If technical accuracy needs clarification,
   report it separately or ask before changing the article.
-- Do not remove questions, repetition, personal reflection, or strong wording
-  merely because a tighter English article would omit them. Condense only when
-  the user asks for editing or when two adjacent sentences are semantically
-  identical; preserve the rhetorical point.
+- Do not remove questions, repetition, personal reflection, or strong wording.
+  Do not condense adjacent sentences, even when they appear semantically
+  similar, unless the user explicitly authorizes that exact condensation.
 - Do not turn an interpretation into the author's claim.
 - Apply explicit user instructions exactly. If the user says to remove section
   0, remove only that section and preserve the numbering and substance of the
@@ -42,16 +73,18 @@ Treat fidelity as more important than polish.
 2. Build a source map before writing:
    - map every English `#` heading to one original major heading,
    - map every `<SectionHeading>` to one original subsection,
-   - map every Callout and Quote to an actual source block, and
+   - map every paragraph, list, nested list, code block, table, Mermaid diagram,
+     Callout, Quote, and detail block to its exact source block,
    - record any section the user explicitly asked to delete.
+   - Do not start drafting until this map is complete.
 3. Inspect `content/articles`, `content/taxonomy.json`, and the MDX component
    registry. Reuse established presentation patterns without changing content.
 4. Choose a lowercase kebab-case slug and create
    `content/articles/<slug>/index.mdx` plus
    `content/articles/<slug>/images/`.
-5. Translate paragraph by paragraph into idiomatic English. Reorder clauses
-   within a paragraph when English requires it, but preserve the paragraph's
-   claim and relationship to its neighbors.
+5. Translate sentence by sentence into idiomatic English. Changing English word
+   order inside a sentence is allowed; moving, merging, splitting, summarizing,
+   or deleting source sentences is not.
 6. Add visual structure only where the source already contains a comparison,
    definition, quotation, list, image, or emphasized conclusion. Read
    [references/portfolio-mdx-patterns.md](references/portfolio-mdx-patterns.md)
@@ -130,15 +163,28 @@ Follow `content/articles/article.schema.json`.
 Before validation, compare the finished MDX against the source from top to
 bottom.
 
-1. Verify that every English heading maps to a source heading and preserves its
+1. Compare the source map top to bottom. Every mapped source block must appear
+   exactly once in the article and in the same relative position.
+2. Verify that every English heading maps to a source heading and preserves its
    central words, metaphor, and intent.
-2. Verify that every Callout, Quote, Figure caption, and emphasized sentence has
-   a source basis.
-3. Search for new claims, caveats, examples, or conclusions. Remove any that the
-   user did not request.
-4. Verify that no source question, example, or section was removed except those
-   explicitly excluded by the user.
-5. Verify that translation changes affect phrasing rather than meaning.
+3. Verify that every Callout, Quote, Figure caption, Mermaid diagram, table,
+   detail block, and emphasized sentence has a source basis.
+4. Verify that no source sentence, question, list item, nested item, example,
+   code block, table row, diagram, or section was removed, merged, or relocated
+   except those explicitly excluded by the user.
+5. Search for new claims, caveats, examples, conclusions, or explanations.
+   Remove any that the user did not request.
+6. Verify that changes affect only English phrasing, not content, hierarchy,
+   order, or intent.
+
+## Change Disclosure
+
+In the final response, explicitly list every change that is not a direct
+sentence-level translation. This includes format conversions, omitted material
+authorized by the user, image substitutions, or any unavoidable structural
+adaptation. If there are no such changes, state: “No content, structure, order,
+or intent was changed; only English phrasing and source-equivalent formatting
+were adapted.”
 
 When uncertain whether a change is translation or editorial rewriting, preserve
 the source and ask the user.

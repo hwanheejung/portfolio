@@ -265,10 +265,8 @@ A purely synchronous rendering model cannot satisfy these conditions. The
 problem is no longer only computation speed; it is how time should be shared.
 Concurrency provides the solution.
 
-<details className="article-toggle">
-  <summary>Concurrency vs. Parallelism</summary>
-  <div className="article-toggle-content">
-    <Figure
+<Toggle summary="Concurrency vs. Parallelism">
+  <Figure
       src="./images/concurrency-vs-parallelism.png"
       alt="Comparison of concurrency, which interleaves work, and parallelism, which executes work simultaneously."
       caption="Concurrency structures independent work so that it appears to progress together; parallelism performs multiple operations at the same instant."
@@ -286,8 +284,7 @@ Concurrency provides the solution.
     - Concurrency describes how to structure several tasks; parallelism
       describes how to run several tasks simultaneously.
 
-  </div>
-</details>
+</Toggle>
 
 Concurrency is a useful answer because rendering is CPU-bound. Running component
 functions, calculating hooks, constructing a Fiber tree for diffing, and

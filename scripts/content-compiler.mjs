@@ -38,10 +38,12 @@ const ALLOWED_MDX_COMPONENTS = new Set([
   "Columns",
   "Figure",
   "Metric",
+  "Mermaid",
   "Numbering",
   "PointGrid",
   "SectionHeading",
   "Table",
+  "Toggle",
 ]);
 
 export class ContentCompilationError extends Error {

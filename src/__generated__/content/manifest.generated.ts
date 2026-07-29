@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "60c529919881f9ef",
+  "buildId": "8f321f14cee8413d",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -152,6 +152,7 @@ export const content = {
   },
   "articleSlugs": [
     "why-setstate-is-asynchronous",
+    "choosing-library-publishing-tools",
     "react-rendering-strategies",
     "why-react-left-class-components",
     "predictable-objects",
@@ -161,6 +162,141 @@ export const content = {
     "thinking-in-graph"
   ],
   "articlesBySlug": {
+    "choosing-library-publishing-tools": {
+      "title": "How Do You Choose Technologies for Publishing a Library?",
+      "description": "Understanding module systems, transpilers, bundlers, and build tools to choose a publishing stack deliberately.",
+      "slug": "choosing-library-publishing-tools",
+      "date": "2025-08-25",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "bundler"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "type-safe-curry",
+        "type-safe-pipe"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/choosing-library-publishing-tools/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "why-i-chose-this-topic",
+          "level": 1,
+          "title": "Why I Chose This Topic"
+        },
+        {
+          "id": "module-systems",
+          "level": 1,
+          "title": "Module Systems"
+        },
+        {
+          "id": "commonjs-2009",
+          "level": 2,
+          "title": "CommonJS (2009)"
+        },
+        {
+          "id": "amd-2009",
+          "level": 2,
+          "title": "AMD (2009)"
+        },
+        {
+          "id": "umd-20092010",
+          "level": 2,
+          "title": "UMD (2009–2010)"
+        },
+        {
+          "id": "es6-modules-2015",
+          "level": 2,
+          "title": "ES6 Modules (2015)"
+        },
+        {
+          "id": "transpilers",
+          "level": 1,
+          "title": "Transpilers"
+        },
+        {
+          "id": "babel-2014",
+          "level": 2,
+          "title": "Babel (2014–)"
+        },
+        {
+          "id": "typescript-2012-broadly-adopted-from-2016",
+          "level": 2,
+          "title": "TypeScript (2012–, broadly adopted from 2016)"
+        },
+        {
+          "id": "combining-tsc-and-babel",
+          "level": 2,
+          "title": "Combining tsc and Babel"
+        },
+        {
+          "id": "bundlers",
+          "level": 1,
+          "title": "Bundlers"
+        },
+        {
+          "id": "the-debate-after-the-arrival-of-http2",
+          "level": 2,
+          "title": "The Debate After the Arrival of HTTP/2"
+        },
+        {
+          "id": "webpack-2012",
+          "level": 2,
+          "title": "Webpack (2012–)"
+        },
+        {
+          "id": "rollup-2015",
+          "level": 2,
+          "title": "Rollup (2015–)"
+        },
+        {
+          "id": "parcel-2017",
+          "level": 2,
+          "title": "Parcel (2017–)"
+        },
+        {
+          "id": "build-tools",
+          "level": 1,
+          "title": "Build Tools"
+        },
+        {
+          "id": "vite-2020",
+          "level": 2,
+          "title": "Vite (2020–)"
+        },
+        {
+          "id": "turbopack-2022-the-next-generation-of-webpack",
+          "level": 2,
+          "title": "Turbopack (2022–, the next generation of Webpack)"
+        },
+        {
+          "id": "esbuild-2020-go-based",
+          "level": 2,
+          "title": "esbuild (2020–, Go-based)"
+        },
+        {
+          "id": "rsbuild",
+          "level": 2,
+          "title": "Rsbuild"
+        },
+        {
+          "id": "conclusion",
+          "level": 1,
+          "title": "Conclusion"
+        },
+        {
+          "id": "1-api-recorder-a-library-with-a-devtool-ui",
+          "level": 2,
+          "title": "1. api-recorder: A Library with a DevTool UI"
+        },
+        {
+          "id": "2-e2e-autogen-a-cli-centered-library",
+          "level": 2,
+          "title": "2. e2e-autogen: A CLI-Centered Library"
+        }
+      ]
+    },
     "predictable-objects": {
       "title": "Is Class State Unpredictable? Try Immutable Objects",
       "description": "Notes on naming, identity, immutability, and interfaces as ways to design objects that take responsibility and collaborate.",
@@ -462,11 +598,6 @@ export const content = {
           "id": "thoughts-on-react-19",
           "level": 2,
           "title": "Thoughts on React 19"
-        },
-        {
-          "id": "questions-to-continue-exploring",
-          "level": 2,
-          "title": "Questions to Continue Exploring"
         }
       ]
     },

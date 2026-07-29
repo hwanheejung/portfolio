@@ -1,9 +1,14 @@
 ---
 name: case-study-principle
-description: Structure, write, review, and improve product or engineering case studies so they are concise, visual, evidence-led, and easy to scan. Use for Markdown or MDX portfolio articles when drafting sections, reducing prose, organizing research and synthesis, choosing columns or visualizations, designing reusable MDX components, or reviewing an existing case study for narrative clarity.
+description: Structure, write, review, and improve product or engineering portfolio case studies (Works) so they are concise, visual, evidence-led, and easy to scan. Use for content under content/works when drafting sections, reducing prose, organizing research and synthesis, choosing columns or visualizations, designing reusable MDX components, or reviewing an existing case study for narrative clarity.
 ---
 
-# Case Study Principle
+# Case Study Principle — Works Only
+
+This is a **Work/case-study** skill, not an Article editing or translation
+skill. Its compression, synthesis, and narrative-reordering practices apply
+only when the user asks to create or revise a case study under `content/works`.
+Never apply them to `content/articles`, including translated technical essays.
 
 Create case studies that reveal the argument before asking the reader to study the details. Prefer short framing, scannable points, and one-purpose visuals over uninterrupted prose.
 
