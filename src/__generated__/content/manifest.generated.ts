@@ -2,7 +2,7 @@
 import type { ContentManifest } from "./types.generated";
 
 export const content = {
-  "buildId": "8f321f14cee8413d",
+  "buildId": "22b8d3a1041103ed",
   "taxonomy": {
     "kinds": {
       "case-study": {
@@ -151,6 +151,7 @@ export const content = {
     }
   },
   "articleSlugs": [
+    "when-do-effects-run",
     "why-setstate-is-asynchronous",
     "choosing-library-publishing-tools",
     "react-rendering-strategies",
@@ -995,6 +996,86 @@ export const content = {
           "id": "further-reading",
           "level": 2,
           "title": "Further Reading"
+        }
+      ]
+    },
+    "when-do-effects-run": {
+      "title": "When Do Effects Run?",
+      "description": "Understanding when useLayoutEffect and useEffect run through React's render, commit, paint, and passive effect phases.",
+      "slug": "when-do-effects-run",
+      "date": "2026-01-14",
+      "draft": false,
+      "kind": "technical-article",
+      "topics": [
+        "react"
+      ],
+      "spotlightIn": {},
+      "related": [
+        "why-setstate-is-asynchronous",
+        "why-react-left-class-components"
+      ],
+      "thumbnail": "./images/thumbnail-editorial.png",
+      "thumbnailUrl": "/_content/articles/when-do-effects-run/images/thumbnail-editorial.png",
+      "toc": [
+        {
+          "id": "part-1-understanding-the-rendering-model",
+          "level": 1,
+          "title": "Part 1: Understanding the Rendering Model"
+        },
+        {
+          "id": "1-render-phase-pure-calculation",
+          "level": 2,
+          "title": "1. Render Phase: Pure Calculation"
+        },
+        {
+          "id": "2-commit-phase-applying-changes-to-the-dom",
+          "level": 2,
+          "title": "2. Commit Phase: Applying Changes to the DOM"
+        },
+        {
+          "id": "3-browser-paint",
+          "level": 2,
+          "title": "3. Browser Paint"
+        },
+        {
+          "id": "4-passive-effect-flush-synchronizing-with-the-outside-world",
+          "level": 2,
+          "title": "4. Passive Effect Flush: Synchronizing with the Outside World"
+        },
+        {
+          "id": "part-2-how-effects-behave-during-re-rendering",
+          "level": 1,
+          "title": "Part 2: How Effects Behave During Re-rendering"
+        },
+        {
+          "id": "1-what-happens-to-an-effect-during-one-re-render",
+          "level": 2,
+          "title": "1. What Happens to an Effect During One Re-render?"
+        },
+        {
+          "id": "2-how-does-react-compare-dependencies",
+          "level": 2,
+          "title": "2. How Does React Compare Dependencies?"
+        },
+        {
+          "id": "3-why-can-react-diff-the-dom-automatically-but-not-optimize-effects-automatically",
+          "level": 2,
+          "title": "3. Why Can React Diff the DOM Automatically but Not Optimize Effects Automatically?"
+        },
+        {
+          "id": "4-developers-must-ultimately-declare-dependencies-themselves",
+          "level": 2,
+          "title": "4. Developers Must Ultimately Declare Dependencies Themselves"
+        },
+        {
+          "id": "part-3-useeffect-is-evil",
+          "level": 1,
+          "title": "Part 3: useEffect Is Evil"
+        },
+        {
+          "id": "summary",
+          "level": 1,
+          "title": "Summary"
         }
       ]
     },

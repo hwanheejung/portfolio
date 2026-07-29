@@ -1,0 +1,475 @@
+---
+title: When Do Effects Run?
+description: Understanding when useLayoutEffect and useEffect run through React's render, commit, paint, and passive effect phases.
+slug: when-do-effects-run
+date: 2026-01-14
+draft: false
+kind: technical-article
+topics:
+  - react
+spotlightIn: {}
+related: ["why-setstate-is-asynchronous", "why-react-left-class-components"]
+thumbnail: "./images/thumbnail-editorial.png"
+---
+
+The original topic was “When does `useEffect` run?” but I changed it to “When
+do effects run?” React has two kinds of effects, `useLayoutEffect` and
+`useEffect`, and they run at different times. I thought it would be useful to
+explore both in this article.
+
+To answer that question, we first need to understand React's rendering model and
+what happens at each stage (Part 1). We will then look at how `useEffect`
+behaves when a component re-renders (Part 2). Finally, I will close by sharing
+my personal thoughts on React side effects—escape hatches such as `useEffect`.
+
+# Part 1: Understanding the Rendering Model
+
+To answer “When do effects run?”, we first need an accurate understanding of
+how React divides rendering into stages and what happens during each one. Many
+developers remember only that effects run “after rendering.” That alone does
+not explain why the structure is necessary, or why some effects are synchronous
+while others are asynchronous.
+
+Let us divide React's rendering process into four stages:
+
+1. **Render Phase (calculation)**
+2. **Commit Phase (application)**
+3. **Browser paint**
+4. **Passive Effect Flush**
+
+<SectionHeading title="1. Render Phase: Pure Calculation" />
+
+During the Render Phase, React _calculates_ what UI should be produced by the
+current update.
+
+- It executes components like functions to calculate the render result—the UI
+  tree.
+- It compares that result with the previous render to determine what changed
+  through reconciliation.
+
+_The Render Phase can be interrupted, resumed, or discarded._
+
+Under Concurrent Rendering, the Render Phase may stop and continue later, or it
+may be discarded entirely. This should sound familiar. As discussed in the
+[previous article](/articles/why-setstate-is-asynchronous), React classifies
+updates into Lanes based on event priority and uses bitmasking to manage
+multiple updates like a set. All of that scheduling happens during the Render
+Phase.
+
+_This is why the Render Phase must remain pure._
+
+Because the Render Phase can be discarded at any time, running side effects
+such as DOM manipulation, network requests, timer setup, or external state
+changes can easily leave the UI and the outside world out of sync.
+
+_Then how are effects handled?_
+
+Instead of running an effect callback during the Render Phase, React records
+only metadata in the Fiber tree indicating that the callback should run during
+a later stage.
+
+In other words, calling `useEffect` or `useLayoutEffect` in a component merely
+marks that there is work to perform later. The actual side effect never runs
+during the Render Phase.
+
+<SectionHeading title="2. Commit Phase: Applying Changes to the DOM" />
+
+Once the Render Phase is complete and React decides, “This is the UI we will
+use,” the Commit Phase begins.
+
+This phase has the following characteristics:
+
+- It is **always synchronous**.
+- It **cannot be canceled**, unlike the Render Phase.
+- It is the **only point at which the DOM is actually updated**.
+
+The following work happens during the Commit Phase:
+
+1. **DOM Mutation** — Apply the render result to the actual DOM.
+2. **Run layout-related effects**
+   - `useLayoutEffect`
+   - Class component `componentDidMount` and `componentDidUpdate`
+
+`useLayoutEffect` runs side effects that must be synchronized closely with
+layout, so it executes synchronously immediately after the DOM changes. This is
+_just before_ the browser paints the screen.
+
+As a result, DOM measurements and synchronous layout work performed inside
+`useLayoutEffect` can be applied accurately without visible flickering.
+
+<SectionHeading title="3. Browser Paint" />
+
+By the end of the Commit Phase, React has applied every necessary change to the
+DOM. But “the DOM changed” does not mean “the screen changed immediately.”
+_Updating the DOM and rendering the screen are separate stages._
+
+After the Commit Phase, the browser proceeds through its own rendering
+pipeline. React does nothing special during this stage; control passes entirely
+to the browser.
+
+- **Style calculation (Recalculate Style)**
+  - Recalculate the CSS rules applied to the DOM tree.
+  - Check again which elements use `display: none`, what color they are, how
+    large they are, and so on.
+- **Layout / Reflow**
+  - Calculate the actual positions and sizes of styled DOM elements.
+  - Layout information such as an element's pixel width and its position below
+    another element is determined here.
+- **Paint**
+  - Paint each element into actual pixels.
+  - Draw text, backgrounds, images, and other content into the screen buffer.
+- **Compositing / screen output**
+  - Combine the individual layers and output the final screen.
+
+<SectionHeading title="4. Passive Effect Flush: Synchronizing with the Outside World" />
+
+React cannot know the exact moment when the browser finishes painting. Instead,
+after the Commit Phase, it assumes that a paint will happen soon and runs
+passive effects on the next tick of the browser event loop. By using the browser
+event loop and task queue scheduling, React makes the effects appear to run
+after paint.
+
+1. Run the `useEffect` cleanup registered by the previous render.
+2. Run the `useEffect` registered by the current render.
+
+Because this timing is asynchronous and occurs after the Commit Phase, it does
+not conflict with layout calculation or cause screen flickering. It is well
+suited to side-effect work that should remain separate from synchronous DOM
+measurement.
+
+This timing is exactly why `useEffect` is used for work such as network
+requests, subscription setup, and event binding.
+
+<Callout title="StrictMode Runs the Cycle Twice" backgroundColor="gray" emoji="💡">
+  In development—especially under
+  [StrictMode](https://ko.react.dev/reference/react/StrictMode)—React deliberately
+  repeats the entire “mount → unmount → mount again” cycle twice.
+
+  - Run the Render Phase.
+  - Run the Commit Phase.
+  - Run `useLayoutEffect`.
+  - Let the browser paint.
+  - Run `useEffect`.
+  - Immediately unmount and run every cleanup.
+  - Mount again and repeat the Render, Commit, and effect stages.
+
+  This behavior has two purposes:
+
+  - **Verify that the Render Phase is pure**
+    - The Render Phase must be interruptible, restartable, and discardable.
+    - Any side effect in this stage becomes visible immediately.
+  - **Verify that effects and cleanups are written safely**
+    - Check for memory leaks across a mount → unmount → mount sequence.
+    - Check that cleanup works correctly.
+    - Check that running an effect twice does not cause a logical error.
+
+  Through this behavior, React reinforces its philosophy of **treating a render
+  function as a pure function that always returns the same UI for the same
+  inputs—props and state** and helps developers find problematic code early.
+
+  This is why development can sometimes feel as if rendering happens twice.
+  However, it is strictly development behavior; in the production environment,
+  it runs only once.
+</Callout>
+
+# Part 2: How Effects Behave During Re-rendering
+
+Part 1 examined, from the perspective of the rendering model, why effects run
+during or after the Commit Phase. Now let us look more closely at the actual
+sequence in which effects run, are interrupted, and run again when a re-render
+occurs.
+
+This goes beyond the question of “when” they run. It connects directly to
+another question: _Why can React automatically diff the DOM but not
+automatically optimize effects?_
+
+<SectionHeading title="1. What Happens to an Effect During One Re-render?" />
+
+First, let us arrange the entire flow as a timeline. For the same component
+instance, effects follow these rules.
+
+**(1) Initial mount**
+
+1. **Render Phase**
+   - The effect is only registered; it does not run.
+2. **Commit Phase**
+   - Update the DOM.
+   - Run `useLayoutEffect`.
+3. **Browser paint**
+4. **Passive Effect Flush**
+   - Run `useEffect`.
+
+On mount, there is no cleanup, so the effect runs as-is.
+
+**(2) Re-render — dependencies changed**
+
+1. Run the **previous effect's cleanup** before the next Commit.
+2. Run the **new effect** after the Commit.
+
+→ This is the familiar “cleanup → effect” order.
+
+**(3) Re-render — dependencies unchanged**
+
+- No cleanup runs.
+- No new effect runs.
+
+React decides that “the value this effect synchronizes with has not changed”
+and _skips the effect entirely_.
+
+**(4) Unmount**
+
+- Run only the cleanup, then finish.
+
+**(5) Remount — a completely new instance caused by a key change or similar event**
+
+- Repeat the entire mount scenario independently of the previous effect.
+- Run the new effect again.
+
+<SectionHeading title="2. How Does React Compare Dependencies?" />
+
+Now let us examine how React determines whether something changed when a
+dependency array is present.
+
+React uses a very simple comparison:
+
+- A shallow comparison based on `Object.is`
+- A one-to-one comparison at each index
+- An unconditional change when the lengths differ
+
+For example:
+
+```typescript
+useEffect(() => {
+  ...
+}, [user.id]);
+```
+
+React compares the previous render's `user.id` with the current render's
+`user.id` using `Object.is`. If they are the same, the effect is skipped.
+
+React does not perform any smarter inference beyond this.
+
+<SectionHeading title="3. Why Can React Diff the DOM Automatically but Not Optimize Effects Automatically?" />
+
+When React updates the DOM, it can optimize through a _value-based comparison_,
+or diffing:
+
+```tsx
+<h1 className="Greeting">주렁 하이</h1>
+
+<h1 className="Greeting">수이 하이</h1>
+```
+
+React compares the following two objects:
+
+```typescript
+const oldProps = { className: "Greeting", children: "주렁 하이" };
+const newProps = { className: "Greeting", children: "수이 하이" };
+```
+
+Only the `children` value changed, so React can make this decision:
+
+```typescript
+domNode.innerText = "수이 하이";
+// There is no need to touch domNode.className.
+```
+
+In other words, because the DOM requires only a comparison of values, React can
+easily infer which part needs to be updated.
+
+Could the same approach be applied to effects? It would be useful if React
+could compare things intelligently on its own instead of requiring developers
+to list them explicitly in a dependency array.
+
+```tsx
+function Greeting({ name }) {
+  const [counter, setCounter] = useState(0);
+
+  useEffect(() => {
+    document.title = "Hello, " + name;
+  });
+
+  return (
+    <h1 className="Greeting">
+      Hello, {name}
+      <button onClick={() => setCounter(count + 1)}>Increment</button>
+    </h1>
+  );
+}
+```
+
+In this example, only `counter` changed and `name` stayed the same, but the
+effect runs again every time.
+
+You might think, “If React could look inside the effect and see that it uses
+only `name`, could it not skip this effect?” But JavaScript is a dynamic
+language. It has a structural limitation: without calling a function, React
+cannot know what that function will do.
+
+_An effect is not a function that depends on a variable. It is a closure that
+captures a value._
+
+Consider the following effect:
+
+```typescript
+useEffect(() => {
+  document.title = "Hello " + name;
+});
+```
+
+At render time, this code becomes a closure. Instead of carrying the “variable”
+named `name`, the function carries the _value held by `name_.
+
+For example, if `name` is `"Billie"`, what React actually sees is a function
+like this:
+
+```typescript
+function effectCallback() {
+  // A closure that remembers the value at render time, not the variable "name".
+  document.title = "Hello, Billie";
+}
+```
+
+From React's perspective, all that is visible is the string `"Hello, Billie"`
+and an effect function that updates the DOM. React cannot know that the effect
+function “depends on the variable named `name`.”
+
+To summarize again: React can optimize the DOM through comparison because DOM
+updates are value-based. An effect, however, is a black box. React cannot
+statically infer which values it captured, which variables, state, or props it
+depends on, or which external state it synchronizes with. React therefore
+cannot decide by itself when the effect should run again.
+
+<SectionHeading title="4. Developers Must Ultimately Declare Dependencies Themselves" />
+
+Effects operate in a separate world, completely detached from rendering, and
+React cannot know which values are used inside them. As a last resort, React
+therefore chose an approach in which developers declare dependencies
+themselves.
+
+By placing `name` in the dependency array, the developer makes a declarative
+promise—a contract—that this effect is synchronized with the value named
+`name`.
+
+React uses this promise to decide whether to run the effect and when to flush a
+particular side effect. If the developer does not honor the contract honestly,
+React can no longer guarantee accurate synchronization.
+
+Declaring dependencies manually is not perfect. The React team is likely well
+aware that the approach can feel somewhat fragile. People make mistakes.
+Missing a dependency can create a stale closure, hide many kinds of bugs, and
+be extremely difficult for beginners to understand.
+
+This is also why React provides an official ESLint plugin and strongly asks
+developers to “tell the truth about dependencies.”
+
+```typescript
+useEffect(() => {
+  document.title = "Hello " + name;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+```
+
+[Do Not Lie to React About
+Dependencies](https://rinae.dev/posts/a-complete-guide-to-useeffect-ko#%EB%A6%AC%EC%95%A1%ED%8A%B8%EC%97%90%EA%B2%8C-%EC%9D%98%EC%A1%B4%EC%84%B1%EC%9C%BC%EB%A1%9C-%EA%B1%B0%EC%A7%93%EB%A7%90%ED%95%98%EC%A7%80-%EB%A7%88%EB%9D%BC)
+
+There is another reason dependencies are not mandatory: leaving them optional
+gives developers room to control an effect's behavior according to their
+intent.
+
+# Part 3: useEffect Is Evil
+
+In React, an effect is a mechanism for _synchronizing with the outside world
+after rendering_. It is the moment when a component leaves the bounds of a pure
+function, just as JavaScript does when it sends a network request or manipulates
+the DOM.
+
+Functional programming tries to minimize side effects or isolate them whenever
+possible. `useEffect` likewise runs something after rendering. From that
+perspective, _I believe `useEffect` is evil_.
+
+Of course, we should use it when necessary. But measured against React's ideal
+rendering model, we can use it far less often than we might think. Many effects
+are not actually necessary. Having many of them often means that the design or
+the data flow is wrong.
+
+_① Effects make rendering dirty._
+
+The Render Phase must be pure, and it must be interruptible, restartable, and
+discardable. Effects, however, run after the Commit Phase and cannot be
+canceled. They have the exact opposite character of React's concurrency model.
+
+_② Effects become entangled with the world outside React._
+
+The more effects interact with the DOM, global variables, local storage, network
+requests, and other external systems, the further a component moves away from
+React's data flow, and the risk of bugs grows exponentially.
+
+_③ Effects cannot avoid stale closure problems._
+
+React cannot infer which variables an effect reads, so developers must write the
+dependency array themselves. A mistake here may not reveal a bug immediately.
+
+_④ Effects are not declarative._
+
+React's central philosophy is that we declare _what_ we want and React decides
+_how_ to produce it. An effect, however, is fundamentally **imperative** code.
+As effects accumulate, a component becomes increasingly complex, like a state
+machine.
+
+Having many `useEffect` calls is a sign of abnormal data flow. The answer
+becomes clearer when we remember that React's basic structure is the
+unidirectional flow “state → render → UI.”
+
+When `useEffect` is overused, a state change triggers an API call inside an
+effect, the result updates state again, another effect runs, and so on.
+
+At that point, the application is already losing React's advantages. With a
+sound design, there is a good chance the problem could have been solved
+naturally through the render flow without an effect.
+
+As the number of `useEffect` calls grows, it is worth checking whether the
+component has too many responsibilities, whether data is fetched in the wrong
+place, whether state is unnecessarily scattered, or whether the design goes
+against React's philosophy.
+
+The React team also recognizes this problem and actively promotes structures
+that do not depend on effects. Server Components (RSC), for example, handle
+data fetching on the server and leave only work such as DOM synchronization on
+the client, greatly reducing the need for effects. The Action pattern can send
+mutations to the server without an effect, and `useTransition` handles
+asynchronous loading within the render flow instead of through an effect.
+
+To summarize, if we want to build the kind of declarative UI React aims for, we
+should reduce effects whenever possible and treat them as a last resort,
+reserved for cases in which they are truly necessary.
+
+# Summary
+
+<Callout title="When Do Effects Run?" backgroundColor="gray" emoji="📣">
+  Effects run after the Render Phase and after the Commit Phase. More precisely,
+  layout effects and passive effects run at different times.
+
+  React rendering proceeds through four stages:
+
+  1. **Render Phase** — A pure stage that calculates the UI.
+     - It does not touch the DOM or run effects.
+     - Under Concurrent Rendering, it may be interrupted or discarded.
+  2. **Commit Phase** — Apply the calculated result to the actual DOM.
+     - This stage is not pure, so it always runs synchronously.
+  3. **Browser paint** — The browser stage in which DOM changes are drawn on
+     the actual screen.
+  4. **Passive Effect Flush** — This is when `useEffect` runs.
+
+  Within this flow:
+
+  - `useLayoutEffect` runs synchronously immediately after the Commit Phase and
+    before the browser paints.
+  - `useEffect` runs asynchronously on the next tick after the browser has
+    painted the screen.
+</Callout>
+
+<Callout title="Further Reading" emoji="📚">
+  [[Translation] A Complete Guide to
+  useEffect](https://rinae.dev/posts/a-complete-guide-to-useeffect-ko)
+</Callout>
